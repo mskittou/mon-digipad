@@ -13,120 +13,180 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
     }
+    
     .editor-content:empty:before {
       content: attr(placeholder);
-      color: #9ca3af;
+      color: #94a3b8;
       pointer-events: none;
       display: block;
     }
-    .editor-content ul { list-style-type: disc; padding-left: 1.25rem; }
-    .editor-content ol { list-style-type: decimal; padding-left: 1.25rem; }
-    .editor-content blockquote { border-left: 3px solid #cbd5e1; padding-left: 0.75rem; font-style: italic; color: #475569; }
-    .editor-content code { background-color: rgba(0,0,0,0.06); padding: 0.15rem 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
+    .editor-content h1 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem; color: #0f172a; }
+    .editor-content h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.4rem; color: #1e293b; }
+    .editor-content ul { list-style-type: disc; padding-left: 1.25rem; margin: 0.5rem 0; }
+    .editor-content ol { list-style-type: decimal; padding-left: 1.25rem; margin: 0.5rem 0; }
+    .editor-content blockquote {
+      border-left: 3px solid #6366f1;
+      padding-left: 0.85rem;
+      font-style: italic;
+      color: #475569;
+      background: rgba(99, 102, 241, 0.05);
+      border-radius: 0 0.5rem 0.5rem 0;
+      margin: 0.6rem 0;
+    }
+    .editor-content code {
+      background-color: rgba(15, 23, 42, 0.06);
+      padding: 0.15rem 0.35rem;
+      border-radius: 0.35rem;
+      font-family: monospace;
+      font-size: 0.85em;
+      color: #db2777;
+    }
+
+    /* Note styling and hover effects */
     .note-card {
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
+      backdrop-filter: blur(8px);
     }
     .note-card:hover {
-      transform: translateY(-3px);
+      transform: translateY(-4px);
+      box-shadow: 0 16px 32px -8px rgba(15, 23, 42, 0.09), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
     }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+<body class="bg-gradient-to-br from-slate-50 via-slate-100 to-indigo-50/30 text-slate-800 min-h-screen flex flex-col antialiased">
 
-  <!-- Header -->
-  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm px-4 lg:px-8 py-3.5">
+  <!-- Header Navigation -->
+  <header class="sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-slate-200/80 shadow-xs px-4 lg:px-8 py-3">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
       
-      <!-- Brand & Status -->
+      <!-- Brand & Live Pill -->
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-200">
-          <i class="ph-bold ph-chalkboard text-2xl"></i>
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+          <i class="ph-bold ph-chalkboard-simple text-2xl"></i>
         </div>
         <div>
-          <h1 class="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            DigiBoard
-            <span id="syncStatus" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-              En ligne
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-extrabold tracking-tight text-slate-900">DigiBoard</h1>
+            <span id="syncStatus" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Synchronisé
             </span>
-          </h1>
-          <p class="text-xs text-slate-500">Mur de notes synchronisé en temps réel</p>
+          </div>
+          <p class="text-xs text-slate-500">Mur de notes collaboratif en temps réel</p>
         </div>
       </div>
 
-      <!-- Controls & Search -->
+      <!-- Search Input -->
       <div class="flex items-center flex-1 max-w-md mx-2">
         <div class="relative w-full">
-          <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+          <i class="ph ph-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
           <input 
             type="text" 
             id="searchInput" 
-            placeholder="Rechercher par texte ou #tag..." 
-            class="w-full pl-9 pr-4 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+            placeholder="Rechercher par mot-clé, #tag, auteur..." 
+            class="w-full pl-10 pr-4 py-2 bg-slate-100/80 hover:bg-slate-100 focus:bg-white text-sm rounded-xl border border-transparent focus:border-indigo-400 focus:ring-3 focus:ring-indigo-500/15 focus:outline-none transition-all"
           >
         </div>
       </div>
 
-      <!-- Action Button -->
+      <!-- View Options & Actions -->
       <div class="flex items-center gap-2">
+        <!-- Layout Switcher -->
+        <div class="hidden sm:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-slate-600">
+          <button id="viewGrid" class="layout-btn p-1.5 rounded-lg text-sm bg-white text-indigo-600 shadow-xs" title="Vue grille">
+            <i class="ph-bold ph-squares-four text-base"></i>
+          </button>
+          <button id="viewStream" class="layout-btn p-1.5 rounded-lg text-sm hover:text-slate-900 transition-colors" title="Vue flux simple">
+            <i class="ph-bold ph-rows text-base"></i>
+          </button>
+        </div>
+
         <button 
           id="btnNewNote"
-          class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2 rounded-xl shadow-sm hover:shadow transition-all transform active:scale-95"
+          class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm hover:shadow-md hover:shadow-indigo-500/20 transition-all transform active:scale-95"
         >
           <i class="ph-bold ph-plus text-lg"></i>
-          <span class="hidden sm:inline">Ajouter une note</span>
+          <span>Nouvelle note</span>
         </button>
       </div>
 
     </div>
   </header>
 
-  <!-- Tags Bar -->
-  <section id="tagsBarContainer" class="bg-white/60 border-b border-slate-200/80 px-4 lg:px-8 py-2 hidden">
+  <!-- Tags Filter Bar -->
+  <section id="tagsBarContainer" class="bg-white/60 border-b border-slate-200/60 px-4 lg:px-8 py-2 hidden">
     <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto text-xs py-1" id="tagsList">
-      <!-- Dynamic Tags -->
+      <!-- Generated dynamically -->
     </div>
   </section>
 
-  <!-- Main Wall -->
+  <!-- Main Wall Container -->
   <main class="flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full">
     
-    <!-- Notes Grid -->
+    <!-- Pinned Notes Section -->
+    <div id="pinnedSection" class="mb-8 hidden">
+      <div class="flex items-center gap-2 mb-4 text-xs font-bold text-amber-700 uppercase tracking-wider">
+        <i class="ph-fill ph-push-pin text-sm text-amber-600"></i>
+        <span>Notes Épinglées</span>
+      </div>
+      <div id="pinnedContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+      <div class="my-8 border-b border-slate-200/80"></div>
+    </div>
+
+    <!-- Regular Notes Section -->
+    <div id="standardSectionTitle" class="flex items-center gap-2 mb-4 text-xs font-bold text-slate-500 uppercase tracking-wider hidden">
+      <i class="ph-bold ph-cards text-sm"></i>
+      <span>Toutes les notes</span>
+    </div>
     <div id="notesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-      <!-- Loading Skeleton -->
-      <div class="col-span-full py-20 flex flex-col items-center justify-center text-slate-400">
-        <i class="ph-bold ph-spinner animate-spin text-4xl text-indigo-500 mb-3"></i>
-        <p class="text-sm">Connexion à Firestore et chargement du mur...</p>
+      <!-- Loading Spinner -->
+      <div class="col-span-full py-28 flex flex-col items-center justify-center text-slate-400">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 mb-3 animate-bounce">
+          <i class="ph-bold ph-chalkboard text-2xl"></i>
+        </div>
+        <p class="text-sm font-medium">Chargement du mur interactif...</p>
       </div>
     </div>
 
     <!-- Empty State -->
     <div id="emptyState" class="hidden py-24 text-center">
-      <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
+      <div class="w-16 h-16 bg-white border border-slate-200 shadow-sm text-indigo-500 rounded-3xl flex items-center justify-center mx-auto mb-4 text-3xl">
         <i class="ph-bold ph-note-pencil"></i>
       </div>
-      <h3 class="text-base font-semibold text-slate-800 mb-1">Votre mur est vide</h3>
-      <p class="text-sm text-slate-500 max-w-sm mx-auto mb-5">Soyez le premier à ajouter une note formatée, coller une image ou partager une idée !</p>
-      <button onclick="document.getElementById('btnNewNote').click()" class="inline-flex items-center gap-2 text-indigo-600 font-semibold text-sm hover:text-indigo-700">
+      <h3 class="text-base font-bold text-slate-800 mb-1">Le mur est complètement libre</h3>
+      <p class="text-sm text-slate-500 max-w-sm mx-auto mb-6">Ajoutez une note, formatez du texte, collez des liens ou partagez vos ressources.</p>
+      <button onclick="document.getElementById('btnNewNote').click()" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-xs transition-all">
         <i class="ph-bold ph-plus-circle text-lg"></i>
-        Créer une première note
+        Créer la première publication
       </button>
     </div>
 
   </main>
 
-  <!-- Note Modal Editor -->
-  <div id="noteModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto transition-all animate-in fade-in zoom-in-95 duration-150">
+  <!-- Modal / Note Editor -->
+  <div id="noteModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto transition-all">
       
       <!-- Modal Header -->
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
-        <h2 id="modalTitle" class="text-lg font-bold text-slate-900">Nouvelle note</h2>
-        <button id="btnCloseModal" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+        <div class="flex items-center gap-2">
+          <h2 id="modalTitle" class="text-base font-bold text-slate-900">Nouvelle publication</h2>
+          <button id="btnPinModal" type="button" class="ml-2 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-600 bg-slate-200/70 hover:bg-amber-100 hover:text-amber-800 transition-colors">
+            <i class="ph-bold ph-push-pin text-sm"></i>
+            <span id="pinModalLabel">Épingler</span>
+          </button>
+        </div>
+        <button id="btnCloseModal" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors">
           <i class="ph-bold ph-x text-lg"></i>
         </button>
       </div>
@@ -134,14 +194,14 @@
       <!-- Modal Body -->
       <div class="p-6 space-y-4">
         
-        <!-- Note Title & Author -->
+        <!-- Title & Author -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="sm:col-span-2">
             <input 
               type="text" 
               id="inputNoteTitle" 
-              placeholder="Titre de la publication..." 
-              class="w-full text-base font-semibold text-slate-900 placeholder:text-slate-400 px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              placeholder="Titre de la note..." 
+              class="w-full text-base font-bold text-slate-900 placeholder:text-slate-400 px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             >
           </div>
           <div>
@@ -149,88 +209,94 @@
               type="text" 
               id="inputNoteAuthor" 
               placeholder="Auteur (optionnel)" 
-              class="w-full text-sm text-slate-700 placeholder:text-slate-400 px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              class="w-full text-sm text-slate-700 placeholder:text-slate-400 px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             >
           </div>
         </div>
 
-        <!-- Rich Text Toolbar (Digipad style) -->
-        <div class="border border-slate-200 rounded-xl overflow-hidden focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
-          <div class="flex flex-wrap items-center gap-0.5 bg-slate-50 border-b border-slate-200 p-1.5 text-slate-700">
-            <button type="button" data-cmd="bold" title="Gras" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-text-b"></i></button>
-            <button type="button" data-cmd="italic" title="Italique" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-text-italic"></i></button>
-            <button type="button" data-cmd="underline" title="Souligné" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-text-underline"></i></button>
-            <button type="button" data-cmd="strikeThrough" title="Barré" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-text-strikethrough"></i></button>
+        <!-- Formatting Toolbar -->
+        <div class="border border-slate-200 rounded-2xl overflow-hidden focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all bg-white shadow-xs">
+          <div class="flex flex-wrap items-center gap-0.5 bg-slate-50/90 border-b border-slate-200/80 p-1.5 text-slate-700">
+            <button type="button" data-cmd="bold" title="Gras" class="btn-tool p-2 hover:bg-slate-200/80 rounded-lg text-base"><i class="ph-bold ph-text-b"></i></button>
+            <button type="button" data-cmd="italic" title="Italique" class="btn-tool p-2 hover:bg-slate-200/80 rounded-lg text-base"><i class="ph-bold ph-text-italic"></i></button>
+            <button type="button" data-cmd="underline" title="Souligné" class="btn-tool p-2 hover:bg-slate-200/80 rounded-lg text-base"><i class="ph-bold ph-text-underline"></i></button>
+            <button type="button" data-cmd="strikeThrough" title="Barré" class="btn-tool p-2 hover:bg-slate-200/80 rounded-lg text-base"><i class="ph-bold ph-text-strikethrough"></i></button>
+            
             <div class="w-px h-4 bg-slate-300 mx-1"></div>
-            <button type="button" data-cmd="formatBlock" data-val="h2" title="Titre 2" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base font-bold">H2</button>
-            <button type="button" data-cmd="formatBlock" data-val="h3" title="Titre 3" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base font-bold">H3</button>
+            
+            <button type="button" data-cmd="formatBlock" data-val="h1" title="Grand titre" class="btn-tool p-1.5 px-2 hover:bg-slate-200/80 rounded-lg text-xs font-bold text-slate-800">H1</button>
+            <button type="button" data-cmd="formatBlock" data-val="h2" title="Sous-titre" class="btn-tool p-1.5 px-2 hover:bg-slate-200/80 rounded-lg text-xs font-bold text-slate-800">H2</button>
+            
             <div class="w-px h-4 bg-slate-300 mx-1"></div>
-            <button type="button" data-cmd="insertUnorderedList" title="Puces" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-list-bullets"></i></button>
-            <button type="button" data-cmd="insertOrderedList" title="Numéros" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-list-numbers"></i></button>
-            <button type="button" data-cmd="formatBlock" data-val="blockquote" title="Citation" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-quotes"></i></button>
+            
+            <button type="button" data-cmd="insertUnorderedList" title="Liste à puces" class="btn-tool p-2 hover:bg-slate-200/80 rounded-lg text-base"><i class="ph-bold ph-list-bullets"></i></button>
+            <button type="button" data-cmd="insertOrderedList" title="Liste ordonnée" class="btn-tool p-2 hover:bg-slate-200/80 rounded-lg text-base"><i class="ph-bold ph-list-numbers"></i></button>
+            <button type="button" data-cmd="formatBlock" data-val="blockquote" title="Citation" class="btn-tool p-2 hover:bg-slate-200/80 rounded-lg text-base"><i class="ph-bold ph-quotes"></i></button>
+            
             <div class="w-px h-4 bg-slate-300 mx-1"></div>
-            <button type="button" id="btnInsertLink" title="Insérer un lien" class="p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-link"></i></button>
-            <button type="button" data-cmd="removeFormat" title="Effacer mise en forme" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base text-rose-500"><i class="ph-bold ph-text-align-justify"></i></button>
+            
+            <button type="button" id="btnInsertLink" title="Insérer un lien URL" class="p-2 hover:bg-slate-200/80 rounded-lg text-base text-indigo-600"><i class="ph-bold ph-link"></i></button>
+            <button type="button" data-cmd="removeFormat" title="Effacer la mise en forme" class="btn-tool p-2 hover:bg-rose-100 rounded-lg text-base text-rose-500"><i class="ph-bold ph-text-align-justify"></i></button>
           </div>
 
-          <!-- WYSIWYG Editable Area -->
+          <!-- WYSIWYG Content Area -->
           <div 
             id="editorContent" 
             contenteditable="true" 
-            placeholder="Écrivez le contenu de votre note ici..." 
-            class="editor-content p-4 min-h-[160px] max-h-[300px] overflow-y-auto focus:outline-none text-sm text-slate-800 leading-relaxed"
+            placeholder="Écrivez le contenu de votre note, consignes ou réflexions ici..." 
+            class="editor-content p-4 min-h-[170px] max-h-[320px] overflow-y-auto focus:outline-none text-sm text-slate-800 leading-relaxed"
           ></div>
         </div>
 
-        <!-- Attachment (Image URL or Upload preview) -->
+        <!-- Attachment (Image Link / File) -->
         <div class="space-y-2">
-          <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-            <span>Illustration (Optionnelle)</span>
-            <span class="text-slate-400 font-normal">URL ou image locale</span>
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+            <span>Image d'illustration</span>
+            <span class="text-slate-400 font-normal">URL externe ou fichier</span>
           </label>
           <div class="flex gap-2">
             <input 
               type="url" 
               id="inputImageUrl" 
-              placeholder="https://exemple.com/image.jpg" 
-              class="flex-1 text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              placeholder="https://images.unsplash.com/photo-..." 
+              class="flex-1 text-sm px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             >
-            <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-sm flex items-center gap-1.5 transition-colors border border-slate-200">
-              <i class="ph-bold ph-upload-simple"></i>
-              <span>Fichier</span>
+            <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors border border-slate-200">
+              <i class="ph-bold ph-image text-indigo-600"></i>
+              <span>Téléverser</span>
               <input type="file" id="inputFileUpload" accept="image/*" class="hidden">
             </label>
           </div>
-          <div id="imagePreviewContainer" class="hidden relative rounded-xl overflow-hidden border border-slate-200 max-h-48 bg-slate-50">
+          <div id="imagePreviewContainer" class="hidden relative rounded-2xl overflow-hidden border border-slate-200 max-h-48 bg-slate-50">
             <img id="imagePreview" src="" alt="Aperçu" class="w-full h-48 object-cover">
-            <button id="btnRemoveImage" class="absolute top-2 right-2 bg-slate-900/60 hover:bg-slate-900 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs">
-              <i class="ph-bold ph-trash"></i>
+            <button id="btnRemoveImage" class="absolute top-2 right-2 bg-slate-900/70 hover:bg-slate-900 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs transition-colors">
+              <i class="ph-bold ph-x"></i>
             </button>
           </div>
         </div>
 
-        <!-- Card Color & Tags -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+        <!-- Color & Tags -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
           <!-- Colors -->
           <div>
-            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Couleur de la carte</label>
-            <div class="flex items-center gap-2" id="colorPickerGroup">
-              <button type="button" data-color="white" class="color-dot w-7 h-7 rounded-full bg-white border-2 border-indigo-600 ring-2 ring-indigo-500/20 shadow-sm"></button>
-              <button type="button" data-color="yellow" class="color-dot w-7 h-7 rounded-full bg-amber-100 border-2 border-transparent hover:scale-105 transition-transform"></button>
-              <button type="button" data-color="blue" class="color-dot w-7 h-7 rounded-full bg-sky-100 border-2 border-transparent hover:scale-105 transition-transform"></button>
-              <button type="button" data-color="green" class="color-dot w-7 h-7 rounded-full bg-emerald-100 border-2 border-transparent hover:scale-105 transition-transform"></button>
-              <button type="button" data-color="rose" class="color-dot w-7 h-7 rounded-full bg-rose-100 border-2 border-transparent hover:scale-105 transition-transform"></button>
-              <button type="button" data-color="purple" class="color-dot w-7 h-7 rounded-full bg-purple-100 border-2 border-transparent hover:scale-105 transition-transform"></button>
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Thème de la carte</label>
+            <div class="flex items-center gap-2.5" id="colorPickerGroup">
+              <button type="button" data-color="white" class="color-dot w-7 h-7 rounded-full bg-white border-2 border-indigo-600 ring-2 ring-indigo-500/20 shadow-xs" title="Blanc"></button>
+              <button type="button" data-color="amber" class="color-dot w-7 h-7 rounded-full bg-amber-100 border-2 border-transparent hover:scale-105 transition-transform" title="Jaune / Ambre"></button>
+              <button type="button" data-color="sky" class="color-dot w-7 h-7 rounded-full bg-sky-100 border-2 border-transparent hover:scale-105 transition-transform" title="Bleu"></button>
+              <button type="button" data-color="emerald" class="color-dot w-7 h-7 rounded-full bg-emerald-100 border-2 border-transparent hover:scale-105 transition-transform" title="Vert"></button>
+              <button type="button" data-color="rose" class="color-dot w-7 h-7 rounded-full bg-rose-100 border-2 border-transparent hover:scale-105 transition-transform" title="Rose"></button>
+              <button type="button" data-color="violet" class="color-dot w-7 h-7 rounded-full bg-purple-100 border-2 border-transparent hover:scale-105 transition-transform" title="Violet"></button>
             </div>
           </div>
           <!-- Tags -->
           <div>
-            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Étiquettes (#tags)</label>
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Étiquettes (#tags)</label>
             <input 
               type="text" 
               id="inputNoteTags" 
-              placeholder="ex: projet, urgent, cours (séparés par virgules)" 
-              class="w-full text-sm px-3 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              placeholder="recherche, atelier, important..." 
+              class="w-full text-sm px-3.5 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             >
           </div>
         </div>
@@ -238,16 +304,16 @@
       </div>
 
       <!-- Modal Footer -->
-      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-        <button id="btnDeleteNote" class="hidden text-rose-600 hover:text-rose-700 text-sm font-semibold flex items-center gap-1.5">
-          <i class="ph-bold ph-trash"></i>
-          Supprimer
+      <div class="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between">
+        <button id="btnDeleteNote" class="hidden text-rose-600 hover:text-rose-700 text-sm font-semibold flex items-center gap-1.5 transition-colors">
+          <i class="ph-bold ph-trash text-base"></i>
+          <span>Supprimer</span>
         </button>
         <div class="flex items-center gap-2 ml-auto">
-          <button id="btnCancelModal" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-200/60 transition-colors">
+          <button id="btnCancelModal" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200/60 transition-colors">
             Annuler
           </button>
-          <button id="btnSaveNote" class="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center gap-2 transition-all">
+          <button id="btnSaveNote" class="px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs flex items-center gap-2 transition-all transform active:scale-95">
             <span id="btnSaveSpinner" class="hidden"><i class="ph-bold ph-spinner animate-spin"></i></span>
             <span>Enregistrer</span>
           </button>
@@ -273,7 +339,7 @@
       orderBy 
     } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
-    // Votre configuration Firebase
+    // Configuration Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDZWyn3dsAWfz1qX1RTmYnQPmhWYJjU_8g",
       authDomain: "mon-digipad.firebaseapp.com",
@@ -284,40 +350,68 @@
       measurementId: "G-TPY9CVBMNL"
     };
 
-    // Initialisation Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const notesCollection = collection(db, "digipad_notes");
 
-    // Palette mapping Tailwind
-    const COLOR_CLASSES = {
-      white: "bg-white border-slate-200/80",
-      yellow: "bg-amber-50/90 border-amber-200/80",
-      blue: "bg-sky-50/90 border-sky-200/80",
-      green: "bg-emerald-50/90 border-emerald-200/80",
-      rose: "bg-rose-50/90 border-rose-200/80",
-      purple: "bg-purple-50/90 border-purple-200/80"
+    // Thèmes visuels des notes
+    const THEMES = {
+      white: {
+        card: "bg-white border-slate-200/80 shadow-slate-100",
+        topBorder: "border-t-slate-400"
+      },
+      amber: {
+        card: "bg-[#fffbeb] border-amber-200/90 shadow-amber-50",
+        topBorder: "border-t-amber-400"
+      },
+      sky: {
+        card: "bg-[#f0f9ff] border-sky-200/90 shadow-sky-50",
+        topBorder: "border-t-sky-400"
+      },
+      emerald: {
+        card: "bg-[#f0fdf4] border-emerald-200/90 shadow-emerald-50",
+        topBorder: "border-t-emerald-400"
+      },
+      rose: {
+        card: "bg-[#fff1f2] border-rose-200/90 shadow-rose-50",
+        topBorder: "border-t-rose-400"
+      },
+      violet: {
+        card: "bg-[#faf5ff] border-purple-200/90 shadow-purple-50",
+        topBorder: "border-t-purple-400"
+      }
     };
 
-    // Global State
+    // State
     let notes = [];
     let activeEditingId = null;
     let selectedColor = "white";
+    let isPinnedCurrent = false;
     let activeTagFilter = null;
     let searchQuery = "";
+    let currentLayout = "grid";
 
     // DOM Elements
     const notesContainer = document.getElementById("notesContainer");
+    const pinnedSection = document.getElementById("pinnedSection");
+    const pinnedContainer = document.getElementById("pinnedContainer");
+    const standardSectionTitle = document.getElementById("standardSectionTitle");
     const emptyState = document.getElementById("emptyState");
+    const syncStatus = document.getElementById("syncStatus");
+    const searchInput = document.getElementById("searchInput");
+    const tagsBarContainer = document.getElementById("tagsBarContainer");
+    const tagsList = document.getElementById("tagsList");
+
     const noteModal = document.getElementById("noteModal");
     const modalTitle = document.getElementById("modalTitle");
+    const btnPinModal = document.getElementById("btnPinModal");
+    const pinModalLabel = document.getElementById("pinModalLabel");
     const btnNewNote = document.getElementById("btnNewNote");
     const btnCloseModal = document.getElementById("btnCloseModal");
     const btnCancelModal = document.getElementById("btnCancelModal");
     const btnSaveNote = document.getElementById("btnSaveNote");
     const btnSaveSpinner = document.getElementById("btnSaveSpinner");
     const btnDeleteNote = document.getElementById("btnDeleteNote");
-    const syncStatus = document.getElementById("syncStatus");
 
     const inputNoteTitle = document.getElementById("inputNoteTitle");
     const inputNoteAuthor = document.getElementById("inputNoteAuthor");
@@ -329,38 +423,126 @@
     const btnRemoveImage = document.getElementById("btnRemoveImage");
     const inputNoteTags = document.getElementById("inputNoteTags");
     const colorPickerGroup = document.getElementById("colorPickerGroup");
-    const searchInput = document.getElementById("searchInput");
-    const tagsBarContainer = document.getElementById("tagsBarContainer");
-    const tagsList = document.getElementById("tagsList");
 
-    // 1. Live Sync avec Firestore (onSnapshot)
+    const viewGrid = document.getElementById("viewGrid");
+    const viewStream = document.getElementById("viewStream");
+
+    // 1. Écoute temps réel Firestore
     const q = query(notesCollection, orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
       notes = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      updateSyncStatus(true);
+      setSyncStatus(true);
       renderBoard();
       updateTagsBar();
     }, (error) => {
-      console.error("Erreur Firestore :", error);
-      updateSyncStatus(false);
+      console.error("Firestore sync error:", error);
+      setSyncStatus(false);
     });
 
-    function updateSyncStatus(online) {
-      if (online) {
-        syncStatus.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800";
-        syncStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span> Synchronisé`;
+    function setSyncStatus(ok) {
+      if (ok) {
+        syncStatus.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200";
+        syncStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Synchronisé`;
       } else {
-        syncStatus.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800";
-        syncStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> Hors ligne / Erreur`;
+        syncStatus.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200";
+        syncStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Déconnecté`;
       }
     }
 
-    // 2. Render Cards
+    // 2. Génération de carte HTML
+    function buildCardHtml(note) {
+      const theme = THEMES[note.color] || THEMES.white;
+      const isPinned = !!note.pinned;
+      const likesCount = note.likes || 0;
+      const clapsCount = note.claps || 0;
+
+      const tagsHtml = (note.tags || []).map(tag => `
+        <span onclick="window.filterByTag('${tag}')" class="inline-flex items-center text-[11px] font-semibold text-slate-600 bg-black/[0.04] hover:bg-indigo-50 hover:text-indigo-600 px-2 py-0.5 rounded-md cursor-pointer transition-colors">
+          #${escapeHtml(tag)}
+        </span>
+      `).join("");
+
+      const imageHtml = note.imageUrl ? `
+        <div class="relative overflow-hidden aspect-video bg-slate-100 border-b border-inherit">
+          <img src="${note.imageUrl}" alt="" class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300" onerror="this.parentElement.style.display='none'">
+        </div>
+      ` : "";
+
+      const authorInitial = (note.author || "A").charAt(0).toUpperCase();
+
+      return `
+        <div class="note-card ${theme.card} border-t-4 ${theme.topBorder} rounded-2xl border shadow-sm flex flex-col justify-between overflow-hidden group cursor-pointer relative" onclick="window.editNote('${note.id}')">
+          
+          <!-- Top Card Meta -->
+          <div>
+            ${imageHtml}
+            <div class="p-5 pb-3">
+              
+              <!-- Pin Badge & Author Header -->
+              <div class="flex items-center justify-between gap-2 mb-2.5">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center justify-center">
+                    ${authorInitial}
+                  </div>
+                  <span class="text-xs font-bold text-slate-700 truncate max-w-[140px]">${escapeHtml(note.author || "Anonyme")}</span>
+                </div>
+                
+                <div class="flex items-center gap-1">
+                  ${isPinned ? `
+                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-md border border-amber-200">
+                      <i class="ph-fill ph-push-pin text-xs"></i>
+                      Épinglé
+                    </span>
+                  ` : ''}
+                  <button onclick="window.togglePin('${note.id}', ${!isPinned})" title="${isPinned ? 'Désépingler' : 'Épingler en haut'}" class="p-1 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-black/[0.04] transition-colors" onclick="event.stopPropagation()">
+                    <i class="ph-bold ph-push-pin text-sm"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Title -->
+              ${note.title ? `<h3 class="font-extrabold text-slate-900 text-base leading-snug mb-2">${escapeHtml(note.title)}</h3>` : ''}
+
+              <!-- Body Rich Text -->
+              <div class="text-sm text-slate-700 leading-relaxed break-words space-y-2 mb-3">
+                ${note.content || ''}
+              </div>
+
+              <!-- Tags -->
+              ${tagsHtml ? `<div class="flex flex-wrap gap-1 mt-3 pt-2.5 border-t border-black/[0.05]">${tagsHtml}</div>` : ''}
+            </div>
+          </div>
+
+          <!-- Card Bottom Interaction Footer -->
+          <div class="px-5 py-2.5 border-t border-inherit flex items-center justify-between bg-black/[0.02]" onclick="event.stopPropagation()">
+            <span class="text-[11px] font-medium text-slate-600">
+              ${formatRelativeDate(note.createdAt)}
+            </span>
+
+            <div class="flex items-center gap-1.5 ml-auto">
+              <!-- Heart reaction -->
+              <button onclick="window.react('${note.id}', 'likes', ${likesCount})" class="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-rose-600 px-2 py-1 rounded-lg hover:bg-black/[0.04] transition-colors">
+                <i class="ph-fill ph-heart ${likesCount > 0 ? 'text-rose-500' : 'text-slate-400'} text-sm"></i>
+                <span>${likesCount}</span>
+              </button>
+
+              <!-- Clap reaction -->
+              <button onclick="window.react('${note.id}', 'claps', ${clapsCount})" class="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-amber-600 px-2 py-1 rounded-lg hover:bg-black/[0.04] transition-colors">
+                <i class="ph-fill ph-hands-clapping ${clapsCount > 0 ? 'text-amber-500' : 'text-slate-400'} text-sm"></i>
+                <span>${clapsCount}</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
+    // 3. Render Board Layout
     function renderBoard() {
-      // Filtrage par texte et tag
       let filtered = notes.filter(n => {
         const matchTag = !activeTagFilter || (n.tags && n.tags.includes(activeTagFilter));
         const fullText = `${n.title || ''} ${n.content || ''} ${n.author || ''} ${(n.tags || []).join(' ')}`.toLowerCase();
@@ -370,61 +552,46 @@
 
       if (filtered.length === 0) {
         notesContainer.innerHTML = "";
+        pinnedContainer.innerHTML = "";
+        pinnedSection.classList.add("hidden");
+        standardSectionTitle.classList.add("hidden");
         emptyState.classList.remove("hidden");
         return;
       }
 
       emptyState.classList.add("hidden");
-      notesContainer.innerHTML = filtered.map(note => {
-        const colorClass = COLOR_CLASSES[note.color] || COLOR_CLASSES.white;
-        const tagsHtml = (note.tags || []).map(t => `
-          <span class="inline-block px-2 py-0.5 text-[11px] font-medium bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 rounded-md cursor-pointer transition-colors" onclick="window.filterByTag('${t}')">
-            #${t}
-          </span>
-        `).join("");
 
-        const imageHtml = note.imageUrl ? `
-          <div class="relative overflow-hidden aspect-video bg-slate-100 border-b border-inherit">
-            <img src="${note.imageUrl}" alt="" class="w-full h-full object-cover loading="lazy" onerror="this.parentElement.style.display='none'">
-          </div>
-        ` : '';
+      const pinned = filtered.filter(n => n.pinned);
+      const standards = filtered.filter(n => !n.pinned);
 
-        const authorText = note.author ? `<span class="text-xs text-slate-500 font-medium">${escapeHtml(note.author)}</span>` : '';
-        const likesCount = note.likes || 0;
+      // Pinned section render
+      if (pinned.length > 0) {
+        pinnedSection.classList.remove("hidden");
+        pinnedContainer.innerHTML = pinned.map(buildCardHtml).join("");
+        standardSectionTitle.classList.toggle("hidden", standards.length === 0);
+      } else {
+        pinnedSection.classList.add("hidden");
+        standardSectionTitle.classList.add("hidden");
+      }
 
-        return `
-          <div class="note-card ${colorClass} rounded-2xl border shadow-sm flex flex-col justify-between overflow-hidden group cursor-pointer" onclick="window.editNote('${note.id}')">
-            <div>
-              ${imageHtml}
-              <div class="p-5">
-                ${note.title ? `<h3 class="font-bold text-slate-900 text-base mb-2 leading-snug">${escapeHtml(note.title)}</h3>` : ''}
-                <div class="text-sm text-slate-700 leading-relaxed break-words space-y-2 mb-3">
-                  ${note.content || ''}
-                </div>
-                ${tagsHtml ? `<div class="flex flex-wrap gap-1.5 mt-3 pt-2 border-t border-slate-900/5">${tagsHtml}</div>` : ''}
-              </div>
-            </div>
-
-            <!-- Card Bottom Bar -->
-            <div class="px-5 py-3 border-t border-inherit flex items-center justify-between bg-black/[0.02]" onclick="event.stopPropagation()">
-              ${authorText}
-              <div class="flex items-center gap-1.5 ml-auto">
-                <button onclick="window.toggleLike('${note.id}', ${likesCount})" class="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-rose-600 px-2 py-1 rounded-lg hover:bg-black/5 transition-all">
-                  <i class="ph-fill ph-heart ${likesCount > 0 ? 'text-rose-500' : 'text-slate-400'} text-sm"></i>
-                  <span>${likesCount}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join("");
+      // Standards notes render
+      notesContainer.innerHTML = standards.map(buildCardHtml).join("");
+      applyLayoutStyles();
     }
 
-    // 3. Barre de tags dynamique
+    function applyLayoutStyles() {
+      const cls = currentLayout === "stream" 
+        ? "grid grid-cols-1 max-w-2xl mx-auto gap-6" 
+        : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5";
+      notesContainer.className = cls;
+      pinnedContainer.className = cls;
+    }
+
+    // 4. Tags Bar
     function updateTagsBar() {
       const allTags = new Set();
       notes.forEach(n => (n.tags || []).forEach(t => allTags.add(t)));
-      
+
       if (allTags.size === 0) {
         tagsBarContainer.classList.add("hidden");
         return;
@@ -432,23 +599,25 @@
 
       tagsBarContainer.classList.remove("hidden");
       let html = `
-        <button onclick="window.filterByTag(null)" class="px-3 py-1 rounded-full font-medium transition-all ${!activeTagFilter ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+        <button onclick="window.filterByTag(null)" class="px-3 py-1 rounded-full font-bold transition-all ${!activeTagFilter ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
           Tous (${notes.length})
         </button>
       `;
+
       allTags.forEach(tag => {
         const count = notes.filter(n => (n.tags || []).includes(tag)).length;
         const isActive = activeTagFilter === tag;
         html += `
-          <button onclick="window.filterByTag('${tag}')" class="px-3 py-1 rounded-full font-medium transition-all ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-            #${tag} <span class="opacity-70 text-[10px]">(${count})</span>
+          <button onclick="window.filterByTag('${tag}')" class="px-3 py-1 rounded-full font-semibold transition-all flex items-center gap-1 ${isActive ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+            <span>#${tag}</span>
+            <span class="text-[10px] opacity-75">(${count})</span>
           </button>
         `;
       });
       tagsList.innerHTML = html;
     }
 
-    // Modal Control
+    // Modal Handlers
     function openModal(note = null) {
       if (note) {
         activeEditingId = note.id;
@@ -459,7 +628,9 @@
         inputImageUrl.value = note.imageUrl || "";
         inputNoteTags.value = (note.tags || []).join(", ");
         selectedColor = note.color || "white";
+        isPinnedCurrent = !!note.pinned;
         btnDeleteNote.classList.remove("hidden");
+
         if (note.imageUrl) {
           imagePreview.src = note.imageUrl;
           imagePreviewContainer.classList.remove("hidden");
@@ -468,16 +639,19 @@
         }
       } else {
         activeEditingId = null;
-        modalTitle.textContent = "Nouvelle note";
+        modalTitle.textContent = "Nouvelle publication";
         inputNoteTitle.value = "";
-        inputNoteAuthor.value = localStorage.getItem("digipad_last_author") || "";
+        inputNoteAuthor.value = localStorage.getItem("digiboard_last_author") || "";
         editorContent.innerHTML = "";
         inputImageUrl.value = "";
         inputNoteTags.value = "";
         selectedColor = "white";
+        isPinnedCurrent = false;
         btnDeleteNote.classList.add("hidden");
         imagePreviewContainer.classList.add("hidden");
       }
+
+      updatePinModalButton();
       refreshColorSelection();
       noteModal.classList.remove("hidden");
       noteModal.classList.add("flex");
@@ -489,6 +663,87 @@
       noteModal.classList.remove("flex");
       activeEditingId = null;
     }
+
+    function updatePinModalButton() {
+      if (isPinnedCurrent) {
+        btnPinModal.className = "ml-2 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-amber-800 bg-amber-100 border border-amber-300";
+        pinModalLabel.textContent = "Épinglée";
+      } else {
+        btnPinModal.className = "ml-2 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-600 bg-slate-200/70 hover:bg-amber-50 hover:text-amber-800";
+        pinModalLabel.textContent = "Épingler";
+      }
+    }
+
+    btnPinModal.addEventListener("click", () => {
+      isPinnedCurrent = !isPinnedCurrent;
+      updatePinModalButton();
+    });
+
+    // Save Note to Firestore
+    btnSaveNote.addEventListener("click", async () => {
+      const title = inputNoteTitle.value.trim();
+      const content = editorContent.innerHTML.trim();
+      const author = inputNoteAuthor.value.trim();
+      const imageUrl = inputImageUrl.value.trim();
+      const rawTags = inputNoteTags.value.split(",").map(t => t.trim().replace(/^#/, "")).filter(Boolean);
+
+      if (!title && !content && !imageUrl) {
+        alert("Veuillez saisir un titre, du texte ou une image.");
+        return;
+      }
+
+      if (author) {
+        localStorage.setItem("digiboard_last_author", author);
+      }
+
+      btnSaveSpinner.classList.remove("hidden");
+      btnSaveNote.disabled = true;
+
+      try {
+        const payload = {
+          title,
+          content,
+          author,
+          imageUrl,
+          tags: rawTags,
+          color: selectedColor,
+          pinned: isPinnedCurrent,
+          updatedAt: serverTimestamp()
+        };
+
+        if (activeEditingId) {
+          await updateDoc(doc(db, "digipad_notes", activeEditingId), payload);
+        } else {
+          payload.createdAt = serverTimestamp();
+          payload.likes = 0;
+          payload.claps = 0;
+          await addDoc(notesCollection, payload);
+        }
+
+        confetti({ particleCount: 35, spread: 60, origin: { y: 0.8 } });
+        closeModal();
+      } catch (err) {
+        console.error("Save error:", err);
+        alert("Erreur lors de l'enregistrement. Vérifiez vos règles de sécurité Firestore.");
+      } finally {
+        btnSaveSpinner.classList.add("hidden");
+        btnSaveNote.disabled = false;
+      }
+    });
+
+    // Delete Note
+    btnDeleteNote.addEventListener("click", async () => {
+      if (!activeEditingId) return;
+      if (confirm("Supprimer définitivement cette note ?")) {
+        try {
+          await deleteDoc(doc(db, "digipad_notes", activeEditingId));
+          closeModal();
+        } catch (err) {
+          console.error("Delete error:", err);
+          alert("Erreur lors de la suppression.");
+        }
+      }
+    });
 
     // Color Selector
     function refreshColorSelection() {
@@ -511,71 +766,7 @@
       refreshColorSelection();
     });
 
-    // Save Note to Firestore
-    btnSaveNote.addEventListener("click", async () => {
-      const title = inputNoteTitle.value.trim();
-      const content = editorContent.innerHTML.trim();
-      const author = inputNoteAuthor.value.trim();
-      const imageUrl = inputImageUrl.value.trim();
-      const rawTags = inputNoteTags.value.split(",").map(t => t.trim().replace(/^#/, "")).filter(Boolean);
-
-      if (!title && !content && !imageUrl) {
-        alert("Veuillez saisir un titre, du contenu ou une image.");
-        return;
-      }
-
-      if (author) {
-        localStorage.setItem("digipad_last_author", author);
-      }
-
-      btnSaveSpinner.classList.remove("hidden");
-      btnSaveNote.disabled = true;
-
-      try {
-        const notePayload = {
-          title,
-          content,
-          author,
-          imageUrl,
-          tags: rawTags,
-          color: selectedColor,
-          updatedAt: serverTimestamp()
-        };
-
-        if (activeEditingId) {
-          await updateDoc(doc(db, "digipad_notes", activeEditingId), notePayload);
-        } else {
-          notePayload.createdAt = serverTimestamp();
-          notePayload.likes = 0;
-          await addDoc(notesCollection, notePayload);
-        }
-
-        confetti({ particleCount: 30, spread: 60, origin: { y: 0.8 } });
-        closeModal();
-      } catch (err) {
-        console.error("Erreur de sauvegarde:", err);
-        alert("Une erreur est survenue lors de l'enregistrement. Vérifiez vos règles de sécurité Firestore.");
-      } finally {
-        btnSaveSpinner.classList.add("hidden");
-        btnSaveNote.disabled = false;
-      }
-    });
-
-    // Delete Note
-    btnDeleteNote.addEventListener("click", async () => {
-      if (!activeEditingId) return;
-      if (confirm("Voulez-vous vraiment supprimer cette note ?")) {
-        try {
-          await deleteDoc(doc(db, "digipad_notes", activeEditingId));
-          closeModal();
-        } catch (err) {
-          console.error("Erreur suppression:", err);
-          alert("Erreur lors de la suppression.");
-        }
-      }
-    });
-
-    // Image handling
+    // Image Upload & Preview
     inputImageUrl.addEventListener("input", (e) => {
       const url = e.target.value.trim();
       if (url) {
@@ -590,7 +781,7 @@
       const file = e.target.files[0];
       if (!file) return;
       if (file.size > 1024 * 1024) {
-        alert("Veuillez choisir une image inférieure à 1 Mo.");
+        alert("Veuillez sélectionner une image de moins de 1 Mo.");
         return;
       }
       const reader = new FileReader();
@@ -608,7 +799,7 @@
       imagePreviewContainer.classList.add("hidden");
     });
 
-    // Rich Text Toolbar Commands
+    // Toolbar Formatter
     document.querySelectorAll(".btn-tool").forEach(btn => {
       btn.addEventListener("click", () => {
         const cmd = btn.getAttribute("data-cmd");
@@ -619,22 +810,30 @@
     });
 
     document.getElementById("btnInsertLink").addEventListener("click", () => {
-      const url = prompt("Adresse URL du lien :");
+      const url = prompt("Collez l'adresse du lien URL :");
       if (url) {
         document.execCommand("createLink", false, url);
       }
     });
 
-    // Search & Filter
-    searchInput.addEventListener("input", (e) => {
-      searchQuery = e.target.value;
-      renderBoard();
-    });
+    // Global Actions
+    window.togglePin = async (id, status) => {
+      try {
+        await updateDoc(doc(db, "digipad_notes", id), { pinned: status });
+      } catch (err) {
+        console.error("Pin toggle error:", err);
+      }
+    };
 
-    window.filterByTag = (tag) => {
-      activeTagFilter = tag;
-      renderBoard();
-      updateTagsBar();
+    window.react = async (id, reactionKey, currentCount) => {
+      try {
+        await updateDoc(doc(db, "digipad_notes", id), {
+          [reactionKey]: (currentCount || 0) + 1
+        });
+        confetti({ particleCount: 15, spread: 45, origin: { y: 0.9 } });
+      } catch (err) {
+        console.error("Reaction error:", err);
+      }
     };
 
     window.editNote = (id) => {
@@ -642,26 +841,55 @@
       if (n) openModal(n);
     };
 
-    window.toggleLike = async (id, currentLikes) => {
-      try {
-        await updateDoc(doc(db, "digipad_notes", id), {
-          likes: currentLikes + 1
-        });
-        confetti({ particleCount: 15, spread: 45, origin: { y: 0.9 } });
-      } catch (err) {
-        console.error("Like error:", err);
-      }
+    window.filterByTag = (tag) => {
+      activeTagFilter = tag;
+      renderBoard();
+      updateTagsBar();
     };
+
+    // Layout switcher
+    viewGrid.addEventListener("click", () => {
+      currentLayout = "grid";
+      viewGrid.className = "layout-btn p-1.5 rounded-lg text-sm bg-white text-indigo-600 shadow-xs";
+      viewStream.className = "layout-btn p-1.5 rounded-lg text-sm hover:text-slate-900 transition-colors";
+      applyLayoutStyles();
+    });
+
+    viewStream.addEventListener("click", () => {
+      currentLayout = "stream";
+      viewStream.className = "layout-btn p-1.5 rounded-lg text-sm bg-white text-indigo-600 shadow-xs";
+      viewGrid.className = "layout-btn p-1.5 rounded-lg text-sm hover:text-slate-900 transition-colors";
+      applyLayoutStyles();
+    });
+
+    // Search filter
+    searchInput.addEventListener("input", (e) => {
+      searchQuery = e.target.value;
+      renderBoard();
+    });
 
     // Modal listeners
     btnNewNote.addEventListener("click", () => openModal());
     btnCloseModal.addEventListener("click", closeModal);
     btnCancelModal.addEventListener("click", closeModal);
 
+    // Helpers
     function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
+      const d = document.createElement("div");
+      d.textContent = text;
+      return d.innerHTML;
+    }
+
+    function formatRelativeDate(timestamp) {
+      if (!timestamp) return "Récemment";
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      const diffMs = Date.now() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 1) return "À l'instant";
+      if (diffMins < 60) return `Il y a ${diffMins} min`;
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `Il y a ${diffHours} h`;
+      return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
     }
   </script>
 </body>

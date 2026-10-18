@@ -1,1211 +1,667 @@
 <!DOCTYPE html>
-<html lang="fr" class="h-full">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DigiBoard - Mur Collaboratif & Notes Interactives</title>
+  <title>DigiBoard - Mur Collaboratif</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-            }
-          },
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
-  
-  <!-- Font Awesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  
-  <!-- Google Font: Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- Canvas-Confetti for celebratory reactions -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
-    
-    /* Custom scrollbars */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(156, 163, 175, 0.5);
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(107, 114, 128, 0.8);
-    }
-
-    /* ContentEditable WYSIWYG Styling */
     .editor-content:empty:before {
       content: attr(placeholder);
       color: #9ca3af;
       pointer-events: none;
       display: block;
     }
-    .editor-content h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
-    .editor-content h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.35rem; }
-    .editor-content p { margin-bottom: 0.5rem; line-height: 1.5; }
-    .editor-content ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.5rem; }
-    .editor-content ol { list-style-type: decimal; margin-left: 1.25rem; margin-bottom: 0.5rem; }
-    .editor-content blockquote { border-left: 3px solid #6366f1; padding-left: 0.75rem; font-style: italic; color: #4b5563; margin-bottom: 0.5rem; }
-    .editor-content pre, .editor-content code { background-color: rgba(0, 0, 0, 0.06); padding: 0.15rem 0.35rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.875rem; }
-    
-    /* Card note rich content renderer */
-    .note-body h1 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.35rem; }
-    .note-body h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; }
-    .note-body p { margin-bottom: 0.4rem; line-height: 1.45; word-break: break-word; }
-    .note-body ul { list-style-type: disc; margin-left: 1.2rem; margin-bottom: 0.4rem; }
-    .note-body ol { list-style-type: decimal; margin-left: 1.2rem; margin-bottom: 0.4rem; }
-    .note-body blockquote { border-left: 3px solid rgba(99, 102, 241, 0.6); padding-left: 0.6rem; font-style: italic; margin-bottom: 0.4rem; }
-    .note-body a { color: #3b82f6; text-decoration: underline; }
-    .note-body pre, .note-body code { background: rgba(0,0,0,0.06); padding: 0.1rem 0.25rem; border-radius: 0.2rem; font-family: monospace; }
-
-    /* Dot grid pattern for free board */
-    .bg-grid-pattern {
-      background-size: 24px 24px;
-      background-image: radial-gradient(circle, #cbd5e1 1.2px, transparent 1.2px);
+    .editor-content ul { list-style-type: disc; padding-left: 1.25rem; }
+    .editor-content ol { list-style-type: decimal; padding-left: 1.25rem; }
+    .editor-content blockquote { border-left: 3px solid #cbd5e1; padding-left: 0.75rem; font-style: italic; color: #475569; }
+    .editor-content code { background-color: rgba(0,0,0,0.06); padding: 0.15rem 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
+    .note-card {
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
     }
-    .dark .bg-grid-pattern {
-      background-image: radial-gradient(circle, #334155 1.2px, transparent 1.2px);
-    }
-
-    @media print {
-      .no-print { display: none !important; }
-      body { background: white !important; color: black !important; }
-      .note-card { break-inside: avoid; box-shadow: none !important; border: 1px solid #ccc !important; }
+    .note-card:hover {
+      transform: translateY(-3px);
     }
   </style>
 </head>
-<body class="h-full flex flex-col bg-slate-100 text-slate-800 transition-colors duration-200">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
 
-  <!-- Top Navigation Header -->
-  <header class="no-print bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-xs px-4 py-2.5">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm px-4 lg:px-8 py-3.5">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
       
-      <!-- Brand & Board Editable Title -->
+      <!-- Brand & Status -->
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 text-white flex items-center justify-center shadow-md shadow-brand-500/20">
-          <i class="fa-solid fa-layer-group text-lg"></i>
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+          <i class="ph-bold ph-chalkboard text-2xl"></i>
         </div>
         <div>
-          <input id="boardTitleInput" type="text" value="Mon Digipad Collaboratif" 
-                 class="font-extrabold text-lg md:text-xl text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-brand-600 focus:outline-none transition-all px-1 py-0.5 rounded cursor-pointer"
-                 title="Cliquez pour renommer le mur">
-          <p class="text-xs text-slate-400 pl-1">Mur virtuel interactif & notes riches</p>
+          <h1 class="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            DigiBoard
+            <span id="syncStatus" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+              En ligne
+            </span>
+          </h1>
+          <p class="text-xs text-slate-500">Mur de notes synchronisé en temps réel</p>
         </div>
       </div>
 
-      <!-- Search, Layout switch & Actions -->
-      <div class="flex flex-wrap items-center gap-2">
-        <!-- Search bar -->
-        <div class="relative flex-1 sm:w-56">
-          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-          <input id="searchInput" type="text" placeholder="Rechercher..." 
-                 class="w-full pl-9 pr-3 py-1.5 bg-slate-100 hover:bg-slate-200/70 focus:bg-white text-sm rounded-lg border border-transparent focus:border-brand-500 focus:outline-none transition">
+      <!-- Controls & Search -->
+      <div class="flex items-center flex-1 max-w-md mx-2">
+        <div class="relative w-full">
+          <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Rechercher par texte ou #tag..." 
+            class="w-full pl-9 pr-4 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+          >
         </div>
+      </div>
 
-        <!-- Color Filter Selector -->
-        <select id="colorFilter" class="bg-slate-100 border border-slate-200 text-xs font-medium rounded-lg px-2.5 py-2 text-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500">
-          <option value="all">🎨 Toutes couleurs</option>
-          <option value="yellow">🟡 Jaune</option>
-          <option value="green">🟢 Menthe</option>
-          <option value="blue">🔵 Azur</option>
-          <option value="pink">🌸 Rose</option>
-          <option value="purple">🟣 Lavande</option>
-          <option value="white">⚪ Neutre</option>
-        </select>
-
-        <!-- View mode buttons -->
-        <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-          <button id="viewGridBtn" onclick="switchLayout('grid')" title="Grille Masonry" class="px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1.5 transition bg-white shadow-xs text-brand-600">
-            <i class="fa-solid fa-table-cells-large"></i> <span class="hidden sm:inline">Grille</span>
-          </button>
-          <button id="viewStreamBtn" onclick="switchLayout('stream')" title="Colonnes de flux" class="px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1.5 transition text-slate-500 hover:text-slate-800">
-            <i class="fa-solid fa-bars-staggered"></i> <span class="hidden sm:inline">Flux</span>
-          </button>
-          <button id="viewFreeBtn" onclick="switchLayout('free')" title="Tableau Libre" class="px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1.5 transition text-slate-500 hover:text-slate-800">
-            <i class="fa-solid fa-hand"></i> <span class="hidden sm:inline">Libre</span>
-          </button>
-        </div>
-
-        <!-- Tools menu: Import/Export/Print -->
-        <div class="relative">
-          <button id="menuToolsBtn" onclick="toggleElement('toolsMenuDropdown')" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition" title="Options et Export">
-            <i class="fa-solid fa-ellipsis-vertical"></i>
-          </button>
-          <div id="toolsMenuDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-40 text-xs font-medium">
-            <button onclick="exportJSON()" class="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2">
-              <i class="fa-solid fa-file-export text-slate-400"></i> Exporter en JSON
-            </button>
-            <label class="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 cursor-pointer">
-              <i class="fa-solid fa-file-import text-slate-400"></i> Importer un JSON
-              <input type="file" id="importJsonInput" accept=".json" onchange="importJSON(event)" class="hidden">
-            </label>
-            <button onclick="window.print()" class="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2">
-              <i class="fa-solid fa-print text-slate-400"></i> Imprimer / Enregistrer PDF
-            </button>
-            <hr class="my-1 border-slate-100">
-            <button onclick="clearAllNotes()" class="w-full text-left px-4 py-2 hover:bg-rose-50 text-rose-600 flex items-center gap-2">
-              <i class="fa-solid fa-trash-can"></i> Réinitialiser le mur
-            </button>
-          </div>
-        </div>
-
-        <!-- Add Note Button (Primary) -->
-        <button onclick="openNoteModal()" class="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-md hover:shadow-brand-500/30 transition transform active:scale-95">
-          <i class="fa-solid fa-plus"></i>
-          <span>Ajouter une note</span>
+      <!-- Action Button -->
+      <div class="flex items-center gap-2">
+        <button 
+          id="btnNewNote"
+          class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2 rounded-xl shadow-sm hover:shadow transition-all transform active:scale-95"
+        >
+          <i class="ph-bold ph-plus text-lg"></i>
+          <span class="hidden sm:inline">Ajouter une note</span>
         </button>
       </div>
 
     </div>
   </header>
 
-  <!-- Tag Filter Bar (sub-bar) -->
-  <section id="tagBarContainer" class="no-print bg-slate-50/80 border-b border-slate-200 px-4 py-1.5 text-xs flex items-center gap-2 overflow-x-auto">
-    <span class="text-slate-400 flex items-center gap-1 shrink-0 font-medium"><i class="fa-solid fa-tags"></i> Étiquettes:</span>
-    <div id="tagsList" class="flex items-center gap-1.5">
-      <!-- Populated dynamically -->
+  <!-- Tags Bar -->
+  <section id="tagsBarContainer" class="bg-white/60 border-b border-slate-200/80 px-4 lg:px-8 py-2 hidden">
+    <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto text-xs py-1" id="tagsList">
+      <!-- Dynamic Tags -->
     </div>
   </section>
 
-  <!-- Main Wall Workspace -->
-  <main id="boardViewport" class="flex-1 relative overflow-auto p-4 sm:p-6 bg-grid-pattern transition-all">
-    <!-- Notice when empty -->
-    <div id="emptyNotice" class="hidden h-full flex flex-col items-center justify-center text-center p-8 max-w-md mx-auto text-slate-400">
-      <div class="w-16 h-16 rounded-2xl bg-white shadow-inner flex items-center justify-center mb-4 text-slate-300 text-2xl">
-        <i class="fa-regular fa-note-sticky"></i>
+  <!-- Main Wall -->
+  <main class="flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full">
+    
+    <!-- Notes Grid -->
+    <div id="notesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      <!-- Loading Skeleton -->
+      <div class="col-span-full py-20 flex flex-col items-center justify-center text-slate-400">
+        <i class="ph-bold ph-spinner animate-spin text-4xl text-indigo-500 mb-3"></i>
+        <p class="text-sm">Connexion à Firestore et chargement du mur...</p>
       </div>
-      <h3 class="font-bold text-lg text-slate-600 mb-1">Votre mur est vide !</h3>
-      <p class="text-xs mb-4">Cliquez sur « Ajouter une note » ou double-cliquez n'importe où sur le tableau pour publier votre première idée formatée.</p>
-      <button onclick="openNoteModal()" class="px-4 py-2 bg-brand-600 text-white rounded-lg text-xs font-semibold shadow hover:bg-brand-700 transition">
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden py-24 text-center">
+      <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
+        <i class="ph-bold ph-note-pencil"></i>
+      </div>
+      <h3 class="text-base font-semibold text-slate-800 mb-1">Votre mur est vide</h3>
+      <p class="text-sm text-slate-500 max-w-sm mx-auto mb-5">Soyez le premier à ajouter une note formatée, coller une image ou partager une idée !</p>
+      <button onclick="document.getElementById('btnNewNote').click()" class="inline-flex items-center gap-2 text-indigo-600 font-semibold text-sm hover:text-indigo-700">
+        <i class="ph-bold ph-plus-circle text-lg"></i>
         Créer une première note
       </button>
     </div>
 
-    <!-- Notes Container (Responsive Masonry Grid / Column Stream / Free Canvas) -->
-    <div id="notesContainer" class="w-full min-h-full">
-      <!-- Notes cards will be injected here -->
-    </div>
   </main>
 
-  <!-- Floating Add Note FAB for mobile -->
-  <button onclick="openNoteModal()" class="no-print md:hidden fixed bottom-5 right-5 w-14 h-14 bg-brand-600 text-white rounded-full shadow-2xl flex items-center justify-center text-xl hover:scale-110 active:scale-95 transition z-20">
-    <i class="fa-solid fa-feather-pointed"></i>
-  </button>
-
-  <!-- ==================== MODALS ==================== -->
-
-  <!-- Note Creator / Editor Modal -->
-  <div id="noteModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col my-auto border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+  <!-- Note Modal Editor -->
+  <div id="noteModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto transition-all animate-in fade-in zoom-in-95 duration-150">
       
       <!-- Modal Header -->
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span id="modalModeBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-brand-100 text-brand-700">Nouvelle note</span>
-          <span class="text-xs text-slate-400">• Digipad Style</span>
-        </div>
-        <button onclick="closeNoteModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition">
-          <i class="fa-solid fa-xmark text-base"></i>
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
+        <h2 id="modalTitle" class="text-lg font-bold text-slate-900">Nouvelle note</h2>
+        <button id="btnCloseModal" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors">
+          <i class="ph-bold ph-x text-lg"></i>
         </button>
       </div>
 
-      <!-- Modal Body (Form) -->
-      <form id="noteForm" onsubmit="saveNote(event)" class="p-6 space-y-4">
-        <input type="hidden" id="editNoteId" value="">
-
-        <!-- Title & Pin -->
-        <div class="flex items-center gap-2">
-          <input id="noteTitle" type="text" placeholder="Titre de la note..." required
-                 class="flex-1 text-base sm:text-lg font-bold text-slate-800 placeholder-slate-400 border border-slate-200 rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
-          
-          <button type="button" id="pinToggleBtn" onclick="togglePinModalState()" class="p-2.5 border border-slate-200 rounded-xl text-slate-400 hover:text-amber-500 hover:border-amber-400 transition" title="Épingler en haut">
-            <i class="fa-solid fa-thumbtack"></i>
-          </button>
+      <!-- Modal Body -->
+      <div class="p-6 space-y-4">
+        
+        <!-- Note Title & Author -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <input 
+              type="text" 
+              id="inputNoteTitle" 
+              placeholder="Titre de la publication..." 
+              class="w-full text-base font-semibold text-slate-900 placeholder:text-slate-400 px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+            >
+          </div>
+          <div>
+            <input 
+              type="text" 
+              id="inputNoteAuthor" 
+              placeholder="Auteur (optionnel)" 
+              class="w-full text-sm text-slate-700 placeholder:text-slate-400 px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+            >
+          </div>
         </div>
 
-        <!-- Rich Text Toolbar (WYSIWYG) -->
-        <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/50">
-          <div class="flex flex-wrap items-center gap-1 p-1.5 border-b border-slate-200 bg-white text-slate-700 text-xs">
-            <button type="button" onclick="formatDoc('bold')" class="p-1.5 w-7 h-7 rounded hover:bg-slate-100 flex items-center justify-center font-bold" title="Gras">B</button>
-            <button type="button" onclick="formatDoc('italic')" class="p-1.5 w-7 h-7 rounded hover:bg-slate-100 flex items-center justify-center italic" title="Italique">I</button>
-            <button type="button" onclick="formatDoc('underline')" class="p-1.5 w-7 h-7 rounded hover:bg-slate-100 flex items-center justify-center underline" title="Souligné">U</button>
-            <button type="button" onclick="formatDoc('strikeThrough')" class="p-1.5 w-7 h-7 rounded hover:bg-slate-100 flex items-center justify-center line-through" title="Barré">S</button>
-            
-            <div class="h-4 w-px bg-slate-200 mx-1"></div>
-
-            <button type="button" onclick="formatHeading('h1')" class="p-1.5 px-2 rounded hover:bg-slate-100 font-bold" title="Titre 1">H1</button>
-            <button type="button" onclick="formatHeading('h2')" class="p-1.5 px-2 rounded hover:bg-slate-100 font-semibold" title="Titre 2">H2</button>
-            
-            <div class="h-4 w-px bg-slate-200 mx-1"></div>
-
-            <button type="button" onclick="formatDoc('insertUnorderedList')" class="p-1.5 w-7 h-7 rounded hover:bg-slate-100 flex items-center justify-center" title="Liste à puces">
-              <i class="fa-solid fa-list-ul"></i>
-            </button>
-            <button type="button" onclick="formatDoc('insertOrderedList')" class="p-1.5 w-7 h-7 rounded hover:bg-slate-100 flex items-center justify-center" title="Liste numérotée">
-              <i class="fa-solid fa-list-ol"></i>
-            </button>
-            <button type="button" onclick="formatQuote()" class="p-1.5 w-7 h-7 rounded hover:bg-slate-100 flex items-center justify-center" title="Citation">
-              <i class="fa-solid fa-quote-left"></i>
-            </button>
-            <button type="button" onclick="formatCode()" class="p-1.5 w-7 h-7 rounded hover:bg-slate-100 flex items-center justify-center" title="Code">
-              <i class="fa-solid fa-code"></i>
-            </button>
-
-            <div class="h-4 w-px bg-slate-200 mx-1"></div>
-
-            <button type="button" onclick="promptLink()" class="p-1.5 w-7 h-7 rounded hover:bg-slate-100 flex items-center justify-center" title="Lien hypertexte">
-              <i class="fa-solid fa-link"></i>
-            </button>
-            <button type="button" onclick="highlightText()" class="p-1.5 w-7 h-7 rounded hover:bg-slate-100 flex items-center justify-center text-amber-500" title="Surligner">
-              <i class="fa-solid fa-highlighter"></i>
-            </button>
+        <!-- Rich Text Toolbar (Digipad style) -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
+          <div class="flex flex-wrap items-center gap-0.5 bg-slate-50 border-b border-slate-200 p-1.5 text-slate-700">
+            <button type="button" data-cmd="bold" title="Gras" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-text-b"></i></button>
+            <button type="button" data-cmd="italic" title="Italique" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-text-italic"></i></button>
+            <button type="button" data-cmd="underline" title="Souligné" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-text-underline"></i></button>
+            <button type="button" data-cmd="strikeThrough" title="Barré" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-text-strikethrough"></i></button>
+            <div class="w-px h-4 bg-slate-300 mx-1"></div>
+            <button type="button" data-cmd="formatBlock" data-val="h2" title="Titre 2" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base font-bold">H2</button>
+            <button type="button" data-cmd="formatBlock" data-val="h3" title="Titre 3" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base font-bold">H3</button>
+            <div class="w-px h-4 bg-slate-300 mx-1"></div>
+            <button type="button" data-cmd="insertUnorderedList" title="Puces" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-list-bullets"></i></button>
+            <button type="button" data-cmd="insertOrderedList" title="Numéros" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-list-numbers"></i></button>
+            <button type="button" data-cmd="formatBlock" data-val="blockquote" title="Citation" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-quotes"></i></button>
+            <div class="w-px h-4 bg-slate-300 mx-1"></div>
+            <button type="button" id="btnInsertLink" title="Insérer un lien" class="p-1.5 hover:bg-slate-200 rounded text-base"><i class="ph-bold ph-link"></i></button>
+            <button type="button" data-cmd="removeFormat" title="Effacer mise en forme" class="btn-tool p-1.5 hover:bg-slate-200 rounded text-base text-rose-500"><i class="ph-bold ph-text-align-justify"></i></button>
           </div>
 
           <!-- WYSIWYG Editable Area -->
-          <div id="noteEditor" contenteditable="true" 
-               placeholder="Écrivez le contenu formaté de votre note..." 
-               class="editor-content p-3.5 min-h-[140px] max-h-[260px] overflow-y-auto bg-white text-slate-800 text-sm focus:outline-none">
-          </div>
+          <div 
+            id="editorContent" 
+            contenteditable="true" 
+            placeholder="Écrivez le contenu de votre note ici..." 
+            class="editor-content p-4 min-h-[160px] max-h-[300px] overflow-y-auto focus:outline-none text-sm text-slate-800 leading-relaxed"
+          ></div>
         </div>
 
-        <!-- Media Attachment Options -->
+        <!-- Attachment (Image URL or Upload preview) -->
         <div class="space-y-2">
           <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-            <span>Médias & Pièces Jointes</span>
-            <span class="text-[10px] text-slate-400 font-normal">URL d'image ou fichier local</span>
+            <span>Illustration (Optionnelle)</span>
+            <span class="text-slate-400 font-normal">URL ou image locale</span>
           </label>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <input id="noteImageUrl" type="url" placeholder="Coller une URL d'image..." 
-                   oninput="updateImagePreview(this.value)"
-                   class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:bg-white focus:ring-1 focus:ring-brand-500">
-            <label class="text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 rounded-lg px-3 py-2 flex items-center justify-center gap-2 cursor-pointer transition">
-              <i class="fa-regular fa-image"></i>
-              <span>Téléverser une image</span>
-              <input type="file" id="noteImageUpload" accept="image/*" onchange="handleImageUpload(event)" class="hidden">
+          <div class="flex gap-2">
+            <input 
+              type="url" 
+              id="inputImageUrl" 
+              placeholder="https://exemple.com/image.jpg" 
+              class="flex-1 text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+            >
+            <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-sm flex items-center gap-1.5 transition-colors border border-slate-200">
+              <i class="ph-bold ph-upload-simple"></i>
+              <span>Fichier</span>
+              <input type="file" id="inputFileUpload" accept="image/*" class="hidden">
             </label>
           </div>
-
-          <!-- Image Preview Thumbnail -->
           <div id="imagePreviewContainer" class="hidden relative rounded-xl overflow-hidden border border-slate-200 max-h-48 bg-slate-50">
-            <img id="imagePreview" src="" alt="Aperçu" class="w-full h-full object-cover">
-            <button type="button" onclick="removeImageAttachment()" class="absolute top-2 right-2 bg-slate-900/70 hover:bg-rose-600 text-white p-1 rounded-full w-6 h-6 flex items-center justify-center text-xs transition">
-              <i class="fa-solid fa-xmark"></i>
+            <img id="imagePreview" src="" alt="Aperçu" class="w-full h-48 object-cover">
+            <button id="btnRemoveImage" class="absolute top-2 right-2 bg-slate-900/60 hover:bg-slate-900 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs">
+              <i class="ph-bold ph-trash"></i>
             </button>
           </div>
         </div>
 
-        <!-- Tags and Color selector -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+        <!-- Card Color & Tags -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <!-- Colors -->
           <div>
-            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Étiquettes (séparées par des virgules)</label>
-            <input id="noteTags" type="text" placeholder="cours, devoir, projet..." 
-                   class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:bg-white focus:ring-1 focus:ring-brand-500">
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Couleur du post-it</label>
-            <div class="flex items-center gap-2.5">
-              <!-- Colors list -->
-              <label class="cursor-pointer">
-                <input type="radio" name="noteColor" value="yellow" checked class="peer sr-only">
-                <div class="w-7 h-7 rounded-full bg-amber-100 border-2 border-transparent peer-checked:border-slate-800 peer-checked:scale-110 shadow-xs transition"></div>
-              </label>
-              <label class="cursor-pointer">
-                <input type="radio" name="noteColor" value="green" class="peer sr-only">
-                <div class="w-7 h-7 rounded-full bg-emerald-100 border-2 border-transparent peer-checked:border-slate-800 peer-checked:scale-110 shadow-xs transition"></div>
-              </label>
-              <label class="cursor-pointer">
-                <input type="radio" name="noteColor" value="blue" class="peer sr-only">
-                <div class="w-7 h-7 rounded-full bg-sky-100 border-2 border-transparent peer-checked:border-slate-800 peer-checked:scale-110 shadow-xs transition"></div>
-              </label>
-              <label class="cursor-pointer">
-                <input type="radio" name="noteColor" value="pink" class="peer sr-only">
-                <div class="w-7 h-7 rounded-full bg-pink-100 border-2 border-transparent peer-checked:border-slate-800 peer-checked:scale-110 shadow-xs transition"></div>
-              </label>
-              <label class="cursor-pointer">
-                <input type="radio" name="noteColor" value="purple" class="peer sr-only">
-                <div class="w-7 h-7 rounded-full bg-indigo-100 border-2 border-transparent peer-checked:border-slate-800 peer-checked:scale-110 shadow-xs transition"></div>
-              </label>
-              <label class="cursor-pointer">
-                <input type="radio" name="noteColor" value="white" class="peer sr-only">
-                <div class="w-7 h-7 rounded-full bg-white border border-slate-300 peer-checked:border-slate-800 peer-checked:scale-110 shadow-xs transition"></div>
-              </label>
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Couleur de la carte</label>
+            <div class="flex items-center gap-2" id="colorPickerGroup">
+              <button type="button" data-color="white" class="color-dot w-7 h-7 rounded-full bg-white border-2 border-indigo-600 ring-2 ring-indigo-500/20 shadow-sm"></button>
+              <button type="button" data-color="yellow" class="color-dot w-7 h-7 rounded-full bg-amber-100 border-2 border-transparent hover:scale-105 transition-transform"></button>
+              <button type="button" data-color="blue" class="color-dot w-7 h-7 rounded-full bg-sky-100 border-2 border-transparent hover:scale-105 transition-transform"></button>
+              <button type="button" data-color="green" class="color-dot w-7 h-7 rounded-full bg-emerald-100 border-2 border-transparent hover:scale-105 transition-transform"></button>
+              <button type="button" data-color="rose" class="color-dot w-7 h-7 rounded-full bg-rose-100 border-2 border-transparent hover:scale-105 transition-transform"></button>
+              <button type="button" data-color="purple" class="color-dot w-7 h-7 rounded-full bg-purple-100 border-2 border-transparent hover:scale-105 transition-transform"></button>
             </div>
           </div>
+          <!-- Tags -->
+          <div>
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Étiquettes (#tags)</label>
+            <input 
+              type="text" 
+              id="inputNoteTags" 
+              placeholder="ex: projet, urgent, cours (séparés par virgules)" 
+              class="w-full text-sm px-3 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+            >
+          </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-          <button type="button" onclick="closeNoteModal()" class="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition">
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+        <button id="btnDeleteNote" class="hidden text-rose-600 hover:text-rose-700 text-sm font-semibold flex items-center gap-1.5">
+          <i class="ph-bold ph-trash"></i>
+          Supprimer
+        </button>
+        <div class="flex items-center gap-2 ml-auto">
+          <button id="btnCancelModal" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-200/60 transition-colors">
             Annuler
           </button>
-          <button type="submit" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-brand-500/25 transition">
-            Enregistrer la note
+          <button id="btnSaveNote" class="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center gap-2 transition-all">
+            <span id="btnSaveSpinner" class="hidden"><i class="ph-bold ph-spinner animate-spin"></i></span>
+            <span>Enregistrer</span>
           </button>
         </div>
-      </form>
+      </div>
 
     </div>
   </div>
 
-  <!-- Fullscreen Note Reader Modal -->
-  <div id="fullViewModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-    <div id="fullViewCard" class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col border border-slate-200">
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h2 id="fullViewTitle" class="text-xl font-bold text-slate-800"></h2>
-        <button onclick="closeFullViewModal()" class="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-slate-100">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
-      </div>
-      <div class="p-6 overflow-y-auto space-y-4">
-        <img id="fullViewImage" class="w-full max-h-96 object-contain rounded-xl hidden border border-slate-100" src="" alt="Media">
-        <div id="fullViewBody" class="note-body text-slate-700 text-sm leading-relaxed"></div>
-        <div id="fullViewTags" class="flex flex-wrap gap-1.5 pt-2"></div>
-      </div>
-      <div class="px-6 py-3 border-t border-slate-100 text-xs text-slate-400 flex items-center justify-between">
-        <span id="fullViewDate"></span>
-        <button onclick="closeFullViewModal()" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-medium">Fermer</button>
-      </div>
-    </div>
-  </div>
+  <!-- FIREBASE MODULE SCRIPT -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      onSnapshot, 
+      addDoc, 
+      updateDoc, 
+      deleteDoc, 
+      doc, 
+      serverTimestamp,
+      query,
+      orderBy 
+    } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
-  <!-- Notification Toast -->
-  <div id="toast" class="fixed bottom-6 right-6 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 z-50 text-xs font-medium">
-    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
-    <span id="toastMessage">Action effectuée</span>
-  </div>
-
-  <!-- ==================== LOGIC & SCRIPTS ==================== -->
-  <script>
-    /* ----------------------------------------------------
-       State Management & Defaults
-    ---------------------------------------------------- */
-    const STORAGE_KEY = 'digiboard_data_v1';
-    let currentLayout = 'grid'; // 'grid' | 'stream' | 'free'
-    let currentFilterTag = null;
-    let isPinnedModal = false;
-    let attachedImageData = '';
-
-    // Color definitions for card backgrounds & styling
-    const COLOR_THEMES = {
-      yellow: { bg: 'bg-amber-50', border: 'border-amber-200', tagBg: 'bg-amber-200/60', text: 'text-amber-900' },
-      green:  { bg: 'bg-emerald-50', border: 'border-emerald-200', tagBg: 'bg-emerald-200/60', text: 'text-emerald-900' },
-      blue:   { bg: 'bg-sky-50', border: 'border-sky-200', tagBg: 'bg-sky-200/60', text: 'text-sky-900' },
-      pink:   { bg: 'bg-pink-50', border: 'border-pink-200', tagBg: 'bg-pink-200/60', text: 'text-pink-900' },
-      purple: { bg: 'bg-indigo-50', border: 'border-indigo-200', tagBg: 'bg-indigo-200/60', text: 'text-indigo-900' },
-      white:  { bg: 'bg-white', border: 'border-slate-200', tagBg: 'bg-slate-100', text: 'text-slate-800' }
+    // Votre configuration Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDZWyn3dsAWfz1qX1RTmYnQPmhWYJjU_8g",
+      authDomain: "mon-digipad.firebaseapp.com",
+      projectId: "mon-digipad",
+      storageBucket: "mon-digipad.firebasestorage.app",
+      messagingSenderId: "148680541361",
+      appId: "1:148680541361:web:6e5146e0b7581d8aae4e90",
+      measurementId: "G-TPY9CVBMNL"
     };
 
-    // Initial Demo Board State if empty
-    const DEFAULT_BOARD = {
-      title: "Mon Digipad Collaboratif",
-      layout: "grid",
-      notes: [
-        {
-          id: "note-1",
-          title: "👋 Bienvenue sur DigiBoard !",
-          content: "<p>DigiBoard est votre espace libre et moderne pour organiser vos cours, projets et réflexions.</p><ul><li><b>Formatage WYSIWYG</b> complet</li><li>Téléversement ou liens d'images</li><li>Disposition Grille, Flux ou Libre</li></ul>",
-          color: "yellow",
-          tags: ["bienvenue", "astuce"],
-          image: "https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=600&q=80",
-          pinned: true,
-          reactions: { heart: 5, like: 12 },
-          createdAt: new Date().toISOString(),
-          x: 40,
-          y: 40
-        },
-        {
-          id: "note-2",
-          title: "💡 Idées de projet Web",
-          content: "<p>Rassemblement des propositions des étudiants pour le sprint final :</p><ol><li>Plateforme de partage de cours</li><li>Quiz interactif temps réel</li><li>Générateur de flashcards</li></ol><blockquote>L'important c'est de livrer un produit ergonomique.</blockquote>",
-          color: "blue",
-          tags: ["projet", "école"],
-          image: "",
-          pinned: false,
-          reactions: { heart: 3, like: 8 },
-          createdAt: new Date().toISOString(),
-          x: 360,
-          y: 40
-        },
-        {
-          id: "note-3",
-          title: "🎨 Personnalisation",
-          content: "<p>Vous pouvez réorganiser les cartes en les glissant, changer leurs teintes pastel et filtrer par mots-clés ci-dessus !</p>",
-          color: "green",
-          tags: ["astuce"],
-          image: "",
-          pinned: false,
-          reactions: { heart: 2, like: 4 },
-          createdAt: new Date().toISOString(),
-          x: 40,
-          y: 380
-        }
-      ]
+    // Initialisation Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const notesCollection = collection(db, "digipad_notes");
+
+    // Palette mapping Tailwind
+    const COLOR_CLASSES = {
+      white: "bg-white border-slate-200/80",
+      yellow: "bg-amber-50/90 border-amber-200/80",
+      blue: "bg-sky-50/90 border-sky-200/80",
+      green: "bg-emerald-50/90 border-emerald-200/80",
+      rose: "bg-rose-50/90 border-rose-200/80",
+      purple: "bg-purple-50/90 border-purple-200/80"
     };
 
-    let boardData = loadData();
+    // Global State
+    let notes = [];
+    let activeEditingId = null;
+    let selectedColor = "white";
+    let activeTagFilter = null;
+    let searchQuery = "";
 
-    /* ----------------------------------------------------
-       Persistence & LocalStorage
-    ---------------------------------------------------- */
-    function loadData() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          return parsed;
-        }
-      } catch (err) {
-        console.error("Erreur de chargement localStorage :", err);
-      }
-      return DEFAULT_BOARD;
-    }
+    // DOM Elements
+    const notesContainer = document.getElementById("notesContainer");
+    const emptyState = document.getElementById("emptyState");
+    const noteModal = document.getElementById("noteModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const btnNewNote = document.getElementById("btnNewNote");
+    const btnCloseModal = document.getElementById("btnCloseModal");
+    const btnCancelModal = document.getElementById("btnCancelModal");
+    const btnSaveNote = document.getElementById("btnSaveNote");
+    const btnSaveSpinner = document.getElementById("btnSaveSpinner");
+    const btnDeleteNote = document.getElementById("btnDeleteNote");
+    const syncStatus = document.getElementById("syncStatus");
 
-    function saveData() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(boardData));
-      } catch (err) {
-        showToast("Erreur lors de la sauvegarde locale.", "rose");
-      }
-    }
+    const inputNoteTitle = document.getElementById("inputNoteTitle");
+    const inputNoteAuthor = document.getElementById("inputNoteAuthor");
+    const editorContent = document.getElementById("editorContent");
+    const inputImageUrl = document.getElementById("inputImageUrl");
+    const inputFileUpload = document.getElementById("inputFileUpload");
+    const imagePreviewContainer = document.getElementById("imagePreviewContainer");
+    const imagePreview = document.getElementById("imagePreview");
+    const btnRemoveImage = document.getElementById("btnRemoveImage");
+    const inputNoteTags = document.getElementById("inputNoteTags");
+    const colorPickerGroup = document.getElementById("colorPickerGroup");
+    const searchInput = document.getElementById("searchInput");
+    const tagsBarContainer = document.getElementById("tagsBarContainer");
+    const tagsList = document.getElementById("tagsList");
 
-    /* ----------------------------------------------------
-       App Initialization
-    ---------------------------------------------------- */
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('boardTitleInput').value = boardData.title || "Mon Digipad";
-      
-      // Board title dynamic sync
-      document.getElementById('boardTitleInput').addEventListener('input', (e) => {
-        boardData.title = e.target.value.trim() || "Mon Digipad";
-        saveData();
-      });
-
-      // Search and Color filter events
-      document.getElementById('searchInput').addEventListener('input', renderNotes);
-      document.getElementById('colorFilter').addEventListener('change', renderNotes);
-
-      // Close dropdowns on outer click
-      document.addEventListener('click', (e) => {
-        const dropdown = document.getElementById('toolsMenuDropdown');
-        const trigger = document.getElementById('menuToolsBtn');
-        if (!dropdown.contains(e.target) && !trigger.contains(e.target)) {
-          dropdown.classList.add('hidden');
-        }
-      });
-
-      // Double-click on main background to create a note
-      document.getElementById('boardViewport').addEventListener('dblclick', (e) => {
-        if (e.target.id === 'boardViewport' || e.target.id === 'notesContainer') {
-          openNoteModal(null, { x: e.offsetX, y: e.offsetY });
-        }
-      });
-
-      // Switch to saved layout or default
-      switchLayout(boardData.layout || 'grid', false);
-      renderNotes();
+    // 1. Live Sync avec Firestore (onSnapshot)
+    const q = query(notesCollection, orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => {
+      notes = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      updateSyncStatus(true);
+      renderBoard();
+      updateTagsBar();
+    }, (error) => {
+      console.error("Erreur Firestore :", error);
+      updateSyncStatus(false);
     });
 
-    /* ----------------------------------------------------
-       Layout Switching (Grid, Stream, Free Canvas)
-    ---------------------------------------------------- */
-    function switchLayout(layout, doSave = true) {
-      currentLayout = layout;
-      boardData.layout = layout;
-      if (doSave) saveData();
-
-      const btnGrid = document.getElementById('viewGridBtn');
-      const btnStream = document.getElementById('viewStreamBtn');
-      const btnFree = document.getElementById('viewFreeBtn');
-      
-      [btnGrid, btnStream, btnFree].forEach(b => {
-        b.className = "px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1.5 transition text-slate-500 hover:text-slate-800";
-      });
-
-      const activeClasses = "px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1.5 transition bg-white shadow-xs text-brand-600";
-      if (layout === 'grid') btnGrid.className = activeClasses;
-      if (layout === 'stream') btnStream.className = activeClasses;
-      if (layout === 'free') btnFree.className = activeClasses;
-
-      const container = document.getElementById('notesContainer');
-
-      if (layout === 'grid') {
-        container.className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 items-start";
-      } else if (layout === 'stream') {
-        container.className = "flex flex-col max-w-2xl mx-auto space-y-5";
-      } else if (layout === 'free') {
-        container.className = "relative min-h-[1400px] w-full";
+    function updateSyncStatus(online) {
+      if (online) {
+        syncStatus.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800";
+        syncStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span> Synchronisé`;
+      } else {
+        syncStatus.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800";
+        syncStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> Hors ligne / Erreur`;
       }
-
-      renderNotes();
     }
 
-    /* ----------------------------------------------------
-       Render Notes & Filters
-    ---------------------------------------------------- */
-    function renderNotes() {
-      const container = document.getElementById('notesContainer');
-      const emptyNotice = document.getElementById('emptyNotice');
-      const searchQuery = (document.getElementById('searchInput').value || '').toLowerCase();
-      const colorFilter = document.getElementById('colorFilter').value;
-
-      container.innerHTML = '';
-
-      // Collect all tags for Tag Bar
-      renderTagsBar();
-
-      // Filter notes
-      let filtered = boardData.notes.filter(note => {
-        const matchesSearch = note.title.toLowerCase().includes(searchQuery) || 
-                              note.content.toLowerCase().includes(searchQuery) ||
-                              (note.tags && note.tags.some(t => t.toLowerCase().includes(searchQuery)));
-        
-        const matchesColor = (colorFilter === 'all') || (note.color === colorFilter);
-        const matchesTag = !currentFilterTag || (note.tags && note.tags.includes(currentFilterTag));
-
-        return matchesSearch && matchesColor && matchesTag;
-      });
-
-      // Sort: pinned first, then by date
-      filtered.sort((a, b) => {
-        if (a.pinned === b.pinned) {
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        }
-        return a.pinned ? -1 : 1;
+    // 2. Render Cards
+    function renderBoard() {
+      // Filtrage par texte et tag
+      let filtered = notes.filter(n => {
+        const matchTag = !activeTagFilter || (n.tags && n.tags.includes(activeTagFilter));
+        const fullText = `${n.title || ''} ${n.content || ''} ${n.author || ''} ${(n.tags || []).join(' ')}`.toLowerCase();
+        const matchSearch = !searchQuery || fullText.includes(searchQuery.toLowerCase());
+        return matchTag && matchSearch;
       });
 
       if (filtered.length === 0) {
-        emptyNotice.classList.remove('hidden');
-      } else {
-        emptyNotice.classList.add('hidden');
-      }
-
-      // Generate Card elements
-      filtered.forEach((note) => {
-        const theme = COLOR_THEMES[note.color] || COLOR_THEMES.yellow;
-        const card = document.createElement('div');
-        card.id = `note-card-${note.id}`;
-        card.dataset.id = note.id;
-
-        // Base styling
-        let layoutStyles = "relative rounded-2xl border p-4 shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between ";
-        layoutStyles += `${theme.bg} ${theme.border} `;
-
-        if (currentLayout === 'free') {
-          layoutStyles += `absolute w-72 sm:w-80 cursor-grab active:cursor-grabbing `;
-          card.style.left = `${note.x || 30}px`;
-          card.style.top = `${note.y || 30}px`;
-        } else {
-          layoutStyles += `w-full `;
-        }
-
-        card.className = layoutStyles;
-
-        // Inner HTML of the note
-        card.innerHTML = `
-          <!-- Pin Ribbon -->
-          ${note.pinned ? `
-            <div class="absolute -top-2.5 right-4 bg-amber-500 text-white rounded-full px-2 py-0.5 text-[10px] font-bold flex items-center gap-1 shadow-sm">
-              <i class="fa-solid fa-thumbtack text-[9px]"></i> Épinglé
-            </div>
-          ` : ''}
-
-          <div>
-            <!-- Header: Title & Actions -->
-            <div class="flex items-start justify-between gap-2 mb-2">
-              <h3 onclick="openFullView('${note.id}')" class="font-bold text-base text-slate-800 leading-snug cursor-pointer hover:text-brand-600 transition">
-                ${escapeHTML(note.title)}
-              </h3>
-              
-              <!-- Quick Actions overlay on hover -->
-              <div class="no-print flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                <button onclick="togglePin('${note.id}')" class="p-1 text-slate-400 hover:text-amber-500 transition" title="${note.pinned ? 'Détacher' : 'Épingler'}">
-                  <i class="fa-solid fa-thumbtack text-xs ${note.pinned ? 'text-amber-500' : ''}"></i>
-                </button>
-                <button onclick="openNoteModal('${note.id}')" class="p-1 text-slate-400 hover:text-brand-600 transition" title="Modifier">
-                  <i class="fa-solid fa-pen text-xs"></i>
-                </button>
-                <button onclick="duplicateNote('${note.id}')" class="p-1 text-slate-400 hover:text-indigo-500 transition" title="Dupliquer">
-                  <i class="fa-regular fa-clone text-xs"></i>
-                </button>
-                <button onclick="deleteNote('${note.id}')" class="p-1 text-slate-400 hover:text-rose-600 transition" title="Supprimer">
-                  <i class="fa-regular fa-trash-can text-xs"></i>
-                </button>
-              </div>
-            </div>
-
-            <!-- Media Banner (if available) -->
-            ${note.image ? `
-              <div class="mb-3 rounded-xl overflow-hidden max-h-56 bg-slate-200/50 cursor-pointer" onclick="openFullView('${note.id}')">
-                <img src="${note.image}" alt="Note attachment" class="w-full h-full object-cover hover:scale-105 transition duration-300" onerror="this.parentElement.style.display='none'">
-              </div>
-            ` : ''}
-
-            <!-- Formatted Note Content -->
-            <div onclick="openFullView('${note.id}')" class="note-body text-slate-700 text-xs sm:text-sm line-clamp-6 cursor-pointer mb-3">
-              ${note.content || ''}
-            </div>
-
-            <!-- Tags -->
-            ${note.tags && note.tags.length ? `
-              <div class="flex flex-wrap gap-1 mb-3">
-                ${note.tags.map(tag => `
-                  <span onclick="setTagFilter('${tag}')" class="cursor-pointer text-[10px] font-semibold px-2 py-0.5 rounded-md ${theme.tagBg} text-slate-700 hover:opacity-80 transition">
-                    #${escapeHTML(tag)}
-                  </span>
-                `).join('')}
-              </div>
-            ` : ''}
-          </div>
-
-          <!-- Note Footer: Date & Reactions -->
-          <div class="pt-2 border-t border-black/5 flex items-center justify-between text-[11px] text-slate-400">
-            <span>${formatTimeAgo(note.createdAt)}</span>
-
-            <div class="flex items-center gap-2">
-              <button onclick="addReaction(event, '${note.id}', 'heart')" class="flex items-center gap-1 px-2 py-0.5 rounded-full hover:bg-black/5 text-rose-500 transition">
-                <i class="fa-solid fa-heart text-[10px]"></i>
-                <span class="font-bold">${note.reactions?.heart || 0}</span>
-              </button>
-              <button onclick="addReaction(event, '${note.id}', 'like')" class="flex items-center gap-1 px-2 py-0.5 rounded-full hover:bg-black/5 text-amber-500 transition">
-                <i class="fa-solid fa-thumbs-up text-[10px]"></i>
-                <span class="font-bold">${note.reactions?.like || 0}</span>
-              </button>
-            </div>
-          </div>
-        `;
-
-        // Free mode Dragging event bindings
-        if (currentLayout === 'free') {
-          attachDragListeners(card, note);
-        }
-
-        container.appendChild(card);
-      });
-    }
-
-    /* ----------------------------------------------------
-       Tag Filter Bar Management
-    ---------------------------------------------------- */
-    function renderTagsBar() {
-      const container = document.getElementById('tagsList');
-      const allTags = new Set();
-      
-      boardData.notes.forEach(n => {
-        if (n.tags && Array.isArray(n.tags)) {
-          n.tags.forEach(t => allTags.add(t.toLowerCase().trim()));
-        }
-      });
-
-      container.innerHTML = '';
-
-      // All tags button
-      const allBtn = document.createElement('button');
-      allBtn.className = `px-2 py-0.5 rounded-full text-[11px] font-semibold transition ${
-        currentFilterTag === null ? 'bg-brand-600 text-white' : 'bg-slate-200/80 text-slate-600 hover:bg-slate-300'
-      }`;
-      allBtn.innerText = "Tous";
-      allBtn.onclick = () => setTagFilter(null);
-      container.appendChild(allBtn);
-
-      allTags.forEach(tag => {
-        const btn = document.createElement('button');
-        const isActive = currentFilterTag === tag;
-        btn.className = `px-2 py-0.5 rounded-full text-[11px] font-medium transition ${
-          isActive ? 'bg-brand-600 text-white' : 'bg-slate-200/80 text-slate-600 hover:bg-slate-300'
-        }`;
-        btn.innerText = `#${tag}`;
-        btn.onclick = () => setTagFilter(tag);
-        container.appendChild(btn);
-      });
-    }
-
-    function setTagFilter(tag) {
-      currentFilterTag = (currentFilterTag === tag) ? null : tag;
-      renderNotes();
-    }
-
-    /* ----------------------------------------------------
-       Note Modal: Create & Edit
-    ---------------------------------------------------- */
-    function openNoteModal(noteId = null, initialCoords = null) {
-      const form = document.getElementById('noteForm');
-      form.reset();
-      attachedImageData = '';
-      document.getElementById('imagePreviewContainer').classList.add('hidden');
-      document.getElementById('imagePreview').src = '';
-      
-      if (noteId) {
-        // Edit Mode
-        const note = boardData.notes.find(n => n.id === noteId);
-        if (!note) return;
-
-        document.getElementById('editNoteId').value = note.id;
-        document.getElementById('noteTitle').value = note.title;
-        document.getElementById('noteEditor').innerHTML = note.content;
-        document.getElementById('noteTags').value = (note.tags || []).join(', ');
-        document.getElementById('modalModeBadge').innerText = "Modifier la note";
-
-        // Color radio
-        const colorRadio = document.querySelector(`input[name="noteColor"][value="${note.color || 'yellow'}"]`);
-        if (colorRadio) colorRadio.checked = true;
-
-        // Image
-        if (note.image) {
-          attachedImageData = note.image;
-          document.getElementById('noteImageUrl').value = note.image.startsWith('data:') ? '' : note.image;
-          document.getElementById('imagePreview').src = note.image;
-          document.getElementById('imagePreviewContainer').classList.remove('hidden');
-        }
-
-        isPinnedModal = !!note.pinned;
-      } else {
-        // Create Mode
-        document.getElementById('editNoteId').value = '';
-        document.getElementById('noteEditor').innerHTML = '';
-        document.getElementById('noteImageUrl').value = '';
-        document.getElementById('modalModeBadge').innerText = "Nouvelle note";
-        isPinnedModal = false;
-
-        // Attach optional initial position for free board
-        form.dataset.initialX = initialCoords ? initialCoords.x : 50;
-        form.dataset.initialY = initialCoords ? initialCoords.y : 50;
-      }
-
-      updatePinModalButton();
-      document.getElementById('noteModal').classList.remove('hidden');
-      document.getElementById('noteTitle').focus();
-    }
-
-    function closeNoteModal() {
-      document.getElementById('noteModal').classList.add('hidden');
-    }
-
-    function togglePinModalState() {
-      isPinnedModal = !isPinnedModal;
-      updatePinModalButton();
-    }
-
-    function updatePinModalButton() {
-      const btn = document.getElementById('pinToggleBtn');
-      if (isPinnedModal) {
-        btn.className = "p-2.5 border border-amber-400 bg-amber-50 rounded-xl text-amber-500 transition";
-      } else {
-        btn.className = "p-2.5 border border-slate-200 rounded-xl text-slate-400 hover:text-amber-500 hover:border-amber-400 transition";
-      }
-    }
-
-    function saveNote(e) {
-      e.preventDefault();
-      const id = document.getElementById('editNoteId').value;
-      const title = document.getElementById('noteTitle').value.trim();
-      const content = document.getElementById('noteEditor').innerHTML;
-      const tagsRaw = document.getElementById('noteTags').value;
-      const tags = tagsRaw.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-      const color = document.querySelector('input[name="noteColor"]:checked').value;
-      
-      const imageUrlInput = document.getElementById('noteImageUrl').value.trim();
-      const finalImage = imageUrlInput || attachedImageData || '';
-
-      if (id) {
-        // Update existing note
-        const index = boardData.notes.findIndex(n => n.id === id);
-        if (index !== -1) {
-          boardData.notes[index] = {
-            ...boardData.notes[index],
-            title,
-            content,
-            tags,
-            color,
-            image: finalImage,
-            pinned: isPinnedModal,
-            updatedAt: new Date().toISOString()
-          };
-          showToast("Note mise à jour avec succès !");
-        }
-      } else {
-        // Create new note
-        const form = document.getElementById('noteForm');
-        const newNote = {
-          id: 'note-' + Date.now(),
-          title,
-          content,
-          tags,
-          color,
-          image: finalImage,
-          pinned: isPinnedModal,
-          reactions: { heart: 0, like: 0 },
-          createdAt: new Date().toISOString(),
-          x: parseInt(form.dataset.initialX || 40),
-          y: parseInt(form.dataset.initialY || 40)
-        };
-        boardData.notes.unshift(newNote);
-        showToast("Nouvelle note publiée sur le mur !");
-      }
-
-      saveData();
-      closeNoteModal();
-      renderNotes();
-    }
-
-    /* ----------------------------------------------------
-       Media & Image Handling
-    ---------------------------------------------------- */
-    function updateImagePreview(url) {
-      const preview = document.getElementById('imagePreview');
-      const container = document.getElementById('imagePreviewContainer');
-      if (url && url.trim()) {
-        preview.src = url.trim();
-        container.classList.remove('hidden');
-        attachedImageData = url.trim();
-      } else {
-        container.classList.add('hidden');
-        attachedImageData = '';
-      }
-    }
-
-    function handleImageUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      if (file.size > 2 * 1024 * 1024) {
-        showToast("L'image est trop lourde (max 2 Mo).", "rose");
+        notesContainer.innerHTML = "";
+        emptyState.classList.remove("hidden");
         return;
       }
 
+      emptyState.classList.add("hidden");
+      notesContainer.innerHTML = filtered.map(note => {
+        const colorClass = COLOR_CLASSES[note.color] || COLOR_CLASSES.white;
+        const tagsHtml = (note.tags || []).map(t => `
+          <span class="inline-block px-2 py-0.5 text-[11px] font-medium bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 rounded-md cursor-pointer transition-colors" onclick="window.filterByTag('${t}')">
+            #${t}
+          </span>
+        `).join("");
+
+        const imageHtml = note.imageUrl ? `
+          <div class="relative overflow-hidden aspect-video bg-slate-100 border-b border-inherit">
+            <img src="${note.imageUrl}" alt="" class="w-full h-full object-cover loading="lazy" onerror="this.parentElement.style.display='none'">
+          </div>
+        ` : '';
+
+        const authorText = note.author ? `<span class="text-xs text-slate-500 font-medium">${escapeHtml(note.author)}</span>` : '';
+        const likesCount = note.likes || 0;
+
+        return `
+          <div class="note-card ${colorClass} rounded-2xl border shadow-sm flex flex-col justify-between overflow-hidden group cursor-pointer" onclick="window.editNote('${note.id}')">
+            <div>
+              ${imageHtml}
+              <div class="p-5">
+                ${note.title ? `<h3 class="font-bold text-slate-900 text-base mb-2 leading-snug">${escapeHtml(note.title)}</h3>` : ''}
+                <div class="text-sm text-slate-700 leading-relaxed break-words space-y-2 mb-3">
+                  ${note.content || ''}
+                </div>
+                ${tagsHtml ? `<div class="flex flex-wrap gap-1.5 mt-3 pt-2 border-t border-slate-900/5">${tagsHtml}</div>` : ''}
+              </div>
+            </div>
+
+            <!-- Card Bottom Bar -->
+            <div class="px-5 py-3 border-t border-inherit flex items-center justify-between bg-black/[0.02]" onclick="event.stopPropagation()">
+              ${authorText}
+              <div class="flex items-center gap-1.5 ml-auto">
+                <button onclick="window.toggleLike('${note.id}', ${likesCount})" class="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-rose-600 px-2 py-1 rounded-lg hover:bg-black/5 transition-all">
+                  <i class="ph-fill ph-heart ${likesCount > 0 ? 'text-rose-500' : 'text-slate-400'} text-sm"></i>
+                  <span>${likesCount}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // 3. Barre de tags dynamique
+    function updateTagsBar() {
+      const allTags = new Set();
+      notes.forEach(n => (n.tags || []).forEach(t => allTags.add(t)));
+      
+      if (allTags.size === 0) {
+        tagsBarContainer.classList.add("hidden");
+        return;
+      }
+
+      tagsBarContainer.classList.remove("hidden");
+      let html = `
+        <button onclick="window.filterByTag(null)" class="px-3 py-1 rounded-full font-medium transition-all ${!activeTagFilter ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+          Tous (${notes.length})
+        </button>
+      `;
+      allTags.forEach(tag => {
+        const count = notes.filter(n => (n.tags || []).includes(tag)).length;
+        const isActive = activeTagFilter === tag;
+        html += `
+          <button onclick="window.filterByTag('${tag}')" class="px-3 py-1 rounded-full font-medium transition-all ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+            #${tag} <span class="opacity-70 text-[10px]">(${count})</span>
+          </button>
+        `;
+      });
+      tagsList.innerHTML = html;
+    }
+
+    // Modal Control
+    function openModal(note = null) {
+      if (note) {
+        activeEditingId = note.id;
+        modalTitle.textContent = "Modifier la note";
+        inputNoteTitle.value = note.title || "";
+        inputNoteAuthor.value = note.author || "";
+        editorContent.innerHTML = note.content || "";
+        inputImageUrl.value = note.imageUrl || "";
+        inputNoteTags.value = (note.tags || []).join(", ");
+        selectedColor = note.color || "white";
+        btnDeleteNote.classList.remove("hidden");
+        if (note.imageUrl) {
+          imagePreview.src = note.imageUrl;
+          imagePreviewContainer.classList.remove("hidden");
+        } else {
+          imagePreviewContainer.classList.add("hidden");
+        }
+      } else {
+        activeEditingId = null;
+        modalTitle.textContent = "Nouvelle note";
+        inputNoteTitle.value = "";
+        inputNoteAuthor.value = localStorage.getItem("digipad_last_author") || "";
+        editorContent.innerHTML = "";
+        inputImageUrl.value = "";
+        inputNoteTags.value = "";
+        selectedColor = "white";
+        btnDeleteNote.classList.add("hidden");
+        imagePreviewContainer.classList.add("hidden");
+      }
+      refreshColorSelection();
+      noteModal.classList.remove("hidden");
+      noteModal.classList.add("flex");
+      editorContent.focus();
+    }
+
+    function closeModal() {
+      noteModal.classList.add("hidden");
+      noteModal.classList.remove("flex");
+      activeEditingId = null;
+    }
+
+    // Color Selector
+    function refreshColorSelection() {
+      document.querySelectorAll(".color-dot").forEach(btn => {
+        const c = btn.getAttribute("data-color");
+        if (c === selectedColor) {
+          btn.classList.add("border-indigo-600", "ring-2", "ring-indigo-500/20");
+          btn.classList.remove("border-transparent");
+        } else {
+          btn.classList.remove("border-indigo-600", "ring-2", "ring-indigo-500/20");
+          btn.classList.add("border-transparent");
+        }
+      });
+    }
+
+    colorPickerGroup.addEventListener("click", (e) => {
+      const btn = e.target.closest(".color-dot");
+      if (!btn) return;
+      selectedColor = btn.getAttribute("data-color");
+      refreshColorSelection();
+    });
+
+    // Save Note to Firestore
+    btnSaveNote.addEventListener("click", async () => {
+      const title = inputNoteTitle.value.trim();
+      const content = editorContent.innerHTML.trim();
+      const author = inputNoteAuthor.value.trim();
+      const imageUrl = inputImageUrl.value.trim();
+      const rawTags = inputNoteTags.value.split(",").map(t => t.trim().replace(/^#/, "")).filter(Boolean);
+
+      if (!title && !content && !imageUrl) {
+        alert("Veuillez saisir un titre, du contenu ou une image.");
+        return;
+      }
+
+      if (author) {
+        localStorage.setItem("digipad_last_author", author);
+      }
+
+      btnSaveSpinner.classList.remove("hidden");
+      btnSaveNote.disabled = true;
+
+      try {
+        const notePayload = {
+          title,
+          content,
+          author,
+          imageUrl,
+          tags: rawTags,
+          color: selectedColor,
+          updatedAt: serverTimestamp()
+        };
+
+        if (activeEditingId) {
+          await updateDoc(doc(db, "digipad_notes", activeEditingId), notePayload);
+        } else {
+          notePayload.createdAt = serverTimestamp();
+          notePayload.likes = 0;
+          await addDoc(notesCollection, notePayload);
+        }
+
+        confetti({ particleCount: 30, spread: 60, origin: { y: 0.8 } });
+        closeModal();
+      } catch (err) {
+        console.error("Erreur de sauvegarde:", err);
+        alert("Une erreur est survenue lors de l'enregistrement. Vérifiez vos règles de sécurité Firestore.");
+      } finally {
+        btnSaveSpinner.classList.add("hidden");
+        btnSaveNote.disabled = false;
+      }
+    });
+
+    // Delete Note
+    btnDeleteNote.addEventListener("click", async () => {
+      if (!activeEditingId) return;
+      if (confirm("Voulez-vous vraiment supprimer cette note ?")) {
+        try {
+          await deleteDoc(doc(db, "digipad_notes", activeEditingId));
+          closeModal();
+        } catch (err) {
+          console.error("Erreur suppression:", err);
+          alert("Erreur lors de la suppression.");
+        }
+      }
+    });
+
+    // Image handling
+    inputImageUrl.addEventListener("input", (e) => {
+      const url = e.target.value.trim();
+      if (url) {
+        imagePreview.src = url;
+        imagePreviewContainer.classList.remove("hidden");
+      } else {
+        imagePreviewContainer.classList.add("hidden");
+      }
+    });
+
+    inputFileUpload.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 1024 * 1024) {
+        alert("Veuillez choisir une image inférieure à 1 Mo.");
+        return;
+      }
       const reader = new FileReader();
-      reader.onload = (event) => {
-        attachedImageData = event.target.result;
-        document.getElementById('imagePreview').src = attachedImageData;
-        document.getElementById('imagePreviewContainer').classList.remove('hidden');
-        document.getElementById('noteImageUrl').value = '';
+      reader.onload = (ev) => {
+        inputImageUrl.value = ev.target.result;
+        imagePreview.src = ev.target.result;
+        imagePreviewContainer.classList.remove("hidden");
       };
       reader.readAsDataURL(file);
-    }
+    });
 
-    function removeImageAttachment() {
-      attachedImageData = '';
-      document.getElementById('noteImageUrl').value = '';
-      document.getElementById('imagePreview').src = '';
-      document.getElementById('imagePreviewContainer').classList.add('hidden');
-    }
+    btnRemoveImage.addEventListener("click", () => {
+      inputImageUrl.value = "";
+      inputFileUpload.value = "";
+      imagePreviewContainer.classList.add("hidden");
+    });
 
-    /* ----------------------------------------------------
-       WYSIWYG Execution Helpers
-    ---------------------------------------------------- */
-    function formatDoc(command, value = null) {
-      document.execCommand(command, false, value);
-      document.getElementById('noteEditor').focus();
-    }
+    // Rich Text Toolbar Commands
+    document.querySelectorAll(".btn-tool").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const cmd = btn.getAttribute("data-cmd");
+        const val = btn.getAttribute("data-val") || null;
+        document.execCommand(cmd, false, val);
+        editorContent.focus();
+      });
+    });
 
-    function formatHeading(tag) {
-      formatDoc('formatBlock', `<${tag}>`);
-    }
-
-    function formatQuote() {
-      formatDoc('formatBlock', '<blockquote>');
-    }
-
-    function formatCode() {
-      const selection = window.getSelection().toString();
-      if (selection) {
-        formatDoc('insertHTML', `<code>${escapeHTML(selection)}</code>`);
-      } else {
-        formatDoc('insertHTML', '<code>code</code>');
-      }
-    }
-
-    function highlightText() {
-      formatDoc('hiliteColor', '#fef08a');
-    }
-
-    function promptLink() {
-      const url = prompt("Entrez l'URL du lien :");
+    document.getElementById("btnInsertLink").addEventListener("click", () => {
+      const url = prompt("Adresse URL du lien :");
       if (url) {
-        formatDoc('createLink', url);
+        document.execCommand("createLink", false, url);
       }
-    }
+    });
 
-    /* ----------------------------------------------------
-       Note Actions (Delete, Duplicate, Pin, Reaction)
-    ---------------------------------------------------- */
-    function deleteNote(id) {
-      const target = boardData.notes.find(n => n.id === id);
-      const title = target ? target.title : "cette note";
-      
-      // Inline custom prompt or simple confirmed deletion
-      boardData.notes = boardData.notes.filter(n => n.id !== id);
-      saveData();
-      renderNotes();
-      showToast(`« ${title} » supprimée.`);
-    }
+    // Search & Filter
+    searchInput.addEventListener("input", (e) => {
+      searchQuery = e.target.value;
+      renderBoard();
+    });
 
-    function duplicateNote(id) {
-      const note = boardData.notes.find(n => n.id === id);
-      if (!note) return;
+    window.filterByTag = (tag) => {
+      activeTagFilter = tag;
+      renderBoard();
+      updateTagsBar();
+    };
 
-      const copy = {
-        ...note,
-        id: 'note-' + Date.now(),
-        title: `${note.title} (Copie)`,
-        createdAt: new Date().toISOString(),
-        x: (note.x || 30) + 25,
-        y: (note.y || 30) + 25,
-        reactions: { heart: 0, like: 0 }
-      };
+    window.editNote = (id) => {
+      const n = notes.find(item => item.id === id);
+      if (n) openModal(n);
+    };
 
-      boardData.notes.unshift(copy);
-      saveData();
-      renderNotes();
-      showToast("Note dupliquée !");
-    }
-
-    function togglePin(id) {
-      const note = boardData.notes.find(n => n.id === id);
-      if (note) {
-        note.pinned = !note.pinned;
-        saveData();
-        renderNotes();
-        showToast(note.pinned ? "Note épinglée !" : "Note détachée.");
-      }
-    }
-
-    function addReaction(e, id, type) {
-      e.stopPropagation();
-      const note = boardData.notes.find(n => n.id === id);
-      if (!note) return;
-
-      if (!note.reactions) note.reactions = { heart: 0, like: 0 };
-      note.reactions[type] = (note.reactions[type] || 0) + 1;
-      saveData();
-      renderNotes();
-
-      // Confetti burst for heart reaction
-      if (type === 'heart' && typeof confetti === 'function') {
-        const rect = e.target.getBoundingClientRect();
-        confetti({
-          particleCount: 25,
-          spread: 60,
-          origin: {
-            x: (rect.left + rect.width / 2) / window.innerWidth,
-            y: (rect.top + rect.height / 2) / window.innerHeight
-          }
+    window.toggleLike = async (id, currentLikes) => {
+      try {
+        await updateDoc(doc(db, "digipad_notes", id), {
+          likes: currentLikes + 1
         });
+        confetti({ particleCount: 15, spread: 45, origin: { y: 0.9 } });
+      } catch (err) {
+        console.error("Like error:", err);
       }
-    }
+    };
 
-    /* ----------------------------------------------------
-       Full View Modal
-    ---------------------------------------------------- */
-    function openFullView(id) {
-      const note = boardData.notes.find(n => n.id === id);
-      if (!note) return;
+    // Modal listeners
+    btnNewNote.addEventListener("click", () => openModal());
+    btnCloseModal.addEventListener("click", closeModal);
+    btnCancelModal.addEventListener("click", closeModal);
 
-      document.getElementById('fullViewTitle').innerText = note.title;
-      document.getElementById('fullViewBody').innerHTML = note.content;
-      document.getElementById('fullViewDate').innerText = "Créé le " + new Date(note.createdAt).toLocaleString('fr-FR');
-
-      const imgEl = document.getElementById('fullViewImage');
-      if (note.image) {
-        imgEl.src = note.image;
-        imgEl.classList.remove('hidden');
-      } else {
-        imgEl.classList.add('hidden');
-      }
-
-      const tagsContainer = document.getElementById('fullViewTags');
-      tagsContainer.innerHTML = '';
-      if (note.tags && note.tags.length) {
-        note.tags.forEach(t => {
-          const badge = document.createElement('span');
-          badge.className = "text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-100 text-slate-700";
-          badge.innerText = `#${t}`;
-          tagsContainer.appendChild(badge);
-        });
-      }
-
-      document.getElementById('fullViewModal').classList.remove('hidden');
-    }
-
-    function closeFullViewModal() {
-      document.getElementById('fullViewModal').classList.add('hidden');
-    }
-
-    /* ----------------------------------------------------
-       Free Drag Board Functionality
-    ---------------------------------------------------- */
-    function attachDragListeners(cardElement, note) {
-      let isDragging = false;
-      let startX, startY;
-      let initialLeft, initialTop;
-
-      const onMouseDown = (e) => {
-        // Prevent drag on buttons or links
-        if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.note-body')) return;
-        
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        initialLeft = cardElement.offsetLeft;
-        initialTop = cardElement.offsetTop;
-        cardElement.style.zIndex = 1000;
-
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-      };
-
-      const onMouseMove = (e) => {
-        if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        const newLeft = Math.max(10, initialLeft + dx);
-        const newTop = Math.max(10, initialTop + dy);
-
-        cardElement.style.left = `${newLeft}px`;
-        cardElement.style.top = `${newTop}px`;
-      };
-
-      const onMouseUp = () => {
-        if (!isDragging) return;
-        isDragging = false;
-        cardElement.style.zIndex = '';
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-
-        // Save position
-        note.x = cardElement.offsetLeft;
-        note.y = cardElement.offsetTop;
-        saveData();
-      };
-
-      cardElement.addEventListener('mousedown', onMouseDown);
-    }
-
-    /* ----------------------------------------------------
-       Import & Export
-    ---------------------------------------------------- */
-    function exportJSON() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(boardData, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `digiboard-export-${new Date().toISOString().slice(0,10)}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      toggleElement('toolsMenuDropdown');
-      showToast("Données exportées au format JSON !");
-    }
-
-    function importJSON(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const parsed = JSON.parse(e.target.result);
-          if (parsed && Array.isArray(parsed.notes)) {
-            boardData = parsed;
-            saveData();
-            document.getElementById('boardTitleInput').value = boardData.title || "Mon Digipad";
-            switchLayout(boardData.layout || 'grid', false);
-            renderNotes();
-            showToast("Mur importé avec succès !");
-          } else {
-            showToast("Format JSON invalide.", "rose");
-          }
-        } catch (err) {
-          showToast("Erreur de lecture du fichier.", "rose");
-        }
-      };
-      reader.readAsText(file);
-      toggleElement('toolsMenuDropdown');
-    }
-
-    function clearAllNotes() {
-      boardData.notes = [];
-      saveData();
-      renderNotes();
-      toggleElement('toolsMenuDropdown');
-      showToast("Le mur a été réinitialisé.");
-    }
-
-    /* ----------------------------------------------------
-       UI Helpers & Utilities
-    ---------------------------------------------------- */
-    function toggleElement(id) {
-      document.getElementById(id).classList.toggle('hidden');
-    }
-
-    function showToast(message, color = 'emerald') {
-      const toast = document.getElementById('toast');
-      const msg = document.getElementById('toastMessage');
-      const icon = document.getElementById('toastIcon');
-
-      msg.innerText = message;
-      if (color === 'rose') {
-        icon.className = "fa-solid fa-triangle-exclamation text-rose-400 text-sm";
-      } else {
-        icon.className = "fa-solid fa-circle-check text-emerald-400 text-sm";
-      }
-
-      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
-      setTimeout(() => {
-        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
-      }, 3000);
-    }
-
-    function escapeHTML(str) {
-      if (!str) return '';
-      return str.replace(/[&<>'"]/g, 
-        tag => ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          "'": '&#39;',
-          '"': '&quot;'
-        }[tag] || tag)
-      );
-    }
-
-    function formatTimeAgo(isoDate) {
-      if (!isoDate) return '';
-      const date = new Date(isoDate);
-      const now = new Date();
-      const diffSec = Math.floor((now - date) / 1000);
-
-      if (diffSec < 60) return "À l'instant";
-      if (diffSec < 3600) return `Il y a ${Math.floor(diffSec / 60)} min`;
-      if (diffSec < 86400) return `Il y a ${Math.floor(diffSec / 3600)} h`;
-      return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
   </script>
 </body>
